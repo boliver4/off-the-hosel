@@ -8,7 +8,6 @@ import {
 } from "@/lib/data";
 import { formatMoney, formatPoints } from "@/lib/scoring";
 import { PickPhoto } from "@/components/PickPhoto";
-import { GolferAvatar } from "@/components/GolferAvatar";
 
 export default async function HomePage() {
   const profile = await getCurrentProfile();
@@ -144,7 +143,6 @@ export default async function HomePage() {
                 <div className="tlc-row" key={p.pick_id}>
                   <span className="tlc-pos">{i + 1}</span>
                   <span className="tlc-player">
-                    <GolferAvatar name={p.golfers?.name ?? ""} photoUrl={p.golfers?.headshot_url} size={26} />
                     <b>{(p as any).golfers?.name}</b>
                   </span>
                   <span className="tlc-picked-by">{(p as any).profiles?.display_name}</span>

@@ -4636,6 +4636,22 @@ body{background:#f2f4f1}
   display:block!important;
 }
 
+/* Shown instead of a photo when the current pick has no headshot_url
+   yet, or the photo URL fails to load — keeps the same gray gradient
+   background from .approved-pick-photo, just with large centered
+   initials instead of an empty box. */
+.approved-pick-photo-fallback{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:rgba(255,255,255,.85)!important;
+  font-size:34px!important;
+  font-weight:800!important;
+  letter-spacing:.5px!important;
+}
+
 .approved-pick-badge{
   position:absolute!important;
   top:10px!important;

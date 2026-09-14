@@ -7,6 +7,7 @@ import {
   getPicksForTournament,
 } from "@/lib/data";
 import { formatMoney, formatPoints } from "@/lib/scoring";
+import { PickPhoto } from "@/components/PickPhoto";
 
 export default async function HomePage() {
   const profile = await getCurrentProfile();
@@ -154,6 +155,9 @@ export default async function HomePage() {
           <div className="approved-pick-main">
             <div className="approved-pick-photo">
               <span className="approved-pick-badge">{myPick ? "CURRENT PICK" : "NO PICK"}</span>
+              {myPick ? (
+                <PickPhoto name={(myPick as any)?.golfers?.name ?? ""} photoUrl={(myPick as any)?.golfers?.headshot_url} />
+              ) : null}
             </div>
             <div className="approved-pick-details">
               <div className="approved-pick-tournament">{tournament?.name || "—"}</div>

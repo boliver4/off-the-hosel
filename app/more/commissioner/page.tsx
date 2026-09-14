@@ -20,6 +20,18 @@ export default async function CommissionerPage() {
         <h1>Commissioner Tools</h1>
       </div>
 
+      <div className="card" style={{ marginBottom: 10 }}>
+        <div className="bigrow">
+          <div className="meta">
+            <b>Tournament Field</b>
+            <small>Pick which golfers are playing each week.</small>
+          </div>
+          <Link href="/more/commissioner/field" className="select">
+            OPEN
+          </Link>
+        </div>
+      </div>
+
       <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 10px" }}>
         Enter each golfer&rsquo;s official winnings after a tournament wraps. Points are calculated
         automatically for everyone who picked them that week.

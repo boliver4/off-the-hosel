@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
 import { getUserPicksWithDetails } from "@/lib/data";
 import { formatPoints } from "@/lib/scoring";
+import { GolferAvatar } from "@/components/GolferAvatar";
 
 export default async function MyPicksPage() {
   const profile = await getCurrentProfile();
@@ -29,6 +30,7 @@ export default async function MyPicksPage() {
         ) : (
           picks.map((pick: any) => (
             <div className="bigrow" key={pick.id}>
+              <GolferAvatar name={pick.golfers?.name ?? ""} photoUrl={pick.golfers?.headshot_url} />
               <div className="meta">
                 <b>{pick.golfers?.name}</b>
                 <small>

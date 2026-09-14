@@ -93,6 +93,12 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["golfer_salaries"]["Insert"]>;
         Relationships: [];
       };
+      tournament_field: {
+        Row: { tournament_id: string; golfer_id: string };
+        Insert: { tournament_id: string; golfer_id: string };
+        Update: Partial<Database["public"]["Tables"]["tournament_field"]["Insert"]>;
+        Relationships: [];
+      };
       tournament_results: {
         Row: {
           tournament_id: string;

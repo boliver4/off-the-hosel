@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
+import { GolferAvatar } from "@/components/GolferAvatar";
 import { MAJOR_CHALLENGE_ROSTER_SIZE, MAJOR_CHALLENGE_SALARY_CAP } from "@/lib/scoring";
 
 type SalaryRow = {
   golfer_id: string;
   salary: number;
-  golfers: { id: string; name: string; world_rank: number | null } | null;
+  golfers: { id: string; name: string; world_rank: number | null; headshot_url: string | null } | null;
 };
 
 export function MajorChallengeClient({
@@ -103,6 +104,7 @@ export function MajorChallengeClient({
         )}
         {golferSalaries.map((g) => (
           <div className="bigrow" key={g.golfer_id}>
+            <GolferAvatar name={g.golfers?.name ?? ""} photoUrl={g.golfers?.headshot_url} />
             <div className="meta">
               <b>{g.golfers?.name}</b>
               <small>${g.salary.toLocaleString()}</small>
@@ -125,6 +127,7 @@ export function MajorChallengeClient({
         ) : (
           lineup.map((id) => (
             <div className="bigrow" key={id}>
+              <GolferAvatar name={byId.get(id)?.golfers?.name ?? ""} photoUrl={byId.get(id)?.golfers?.headshot_url} />
               <div className="meta">
                 <b>{byId.get(id)?.golfers?.name}</b>
                 <small>${(byId.get(id)?.salary ?? 0).toLocaleString()}</small>

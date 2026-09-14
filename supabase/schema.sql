@@ -31,6 +31,7 @@ drop table if exists public.major_lineup_golfers cascade;
 drop table if exists public.major_lineups cascade;
 drop table if exists public.one_and_done_picks cascade;
 drop table if exists public.tournament_results cascade;
+drop table if exists public.tournament_field cascade;
 drop table if exists public.golfer_salaries cascade;
 drop table if exists public.tournaments cascade;
 drop table if exists public.golfers cascade;
@@ -118,6 +119,21 @@ create table if not exists public.tournaments (
 );
 
 create index if not exists tournaments_start_date_idx on public.tournaments (start_date);
+
+-- ---------------------------------------------------------------------------
+-- tournament_field: which golfers are actually playing a given tournament.
+-- A commissioner sets this from Commissioner Tools once the field is known
+-- for the week. The One & Done picker only shows golfers listed here; if a
+-- tournament has no field rows yet (not set up), the app falls back to
+-- showing every active golfer, so nothing breaks for older tournaments.
+-- ---------------------------------------------------------------------------
+create table if not exists public.tournament_field (
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  golfer_id uuid not null references public.golfers (id) on delete cascade,
+  primary key (tournament_id, golfer_id)
+);
+
+create index if not exists tournament_field_tournament_idx on public.tournament_field (tournament_id);
 
 -- ---------------------------------------------------------------------------
 -- golfer_salaries (Major Challenge salaries, can vary per tournament)
@@ -293,6 +309,7 @@ alter table public.profiles enable row level security;
 alter table public.golfers enable row level security;
 alter table public.tournaments enable row level security;
 alter table public.golfer_salaries enable row level security;
+alter table public.tournament_field enable row level security;
 alter table public.tournament_results enable row level security;
 alter table public.one_and_done_picks enable row level security;
 alter table public.major_lineups enable row level security;
@@ -393,6 +410,20 @@ create policy "admins manage salaries"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- tournament_field: readable by everyone signed in; writable only by admins.
+drop policy if exists "field is readable by authenticated users" on public.tournament_field;
+create policy "field is readable by authenticated users"
+  on public.tournament_field for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admins manage field" on public.tournament_field;
+create policy "admins manage field"
+  on public.tournament_field for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
 -- tournament_results: readable by everyone, including logged-out visitors
 -- (needed to compute points shown on the public leaderboard); writable only
 -- by admins.
@@ -482,6 +513,7 @@ grant select on
   public.golfers,
   public.tournaments,
   public.golfer_salaries,
+  public.tournament_field,
   public.tournament_results,
   public.one_and_done_picks,
   public.major_lineups,
@@ -503,6 +535,7 @@ grant insert, update, delete on
   public.golfers,
   public.tournaments,
   public.golfer_salaries,
+  public.tournament_field,
   public.tournament_results,
   public.one_and_done_picks,
   public.major_lineups,

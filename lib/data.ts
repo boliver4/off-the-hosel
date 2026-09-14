@@ -55,6 +55,31 @@ export async function getFeaturedMajor(): Promise<Tournament | null> {
   return upcoming ?? majors[majors.length - 1];
 }
 
+/**
+ * The golfers actually in the field for a tournament (set by a
+ * commissioner in Commissioner Tools). Returns an empty array if no
+ * field has been set for that tournament yet — callers should fall back
+ * to `getGolfers()` (the full pool) in that case, so older/unconfigured
+ * tournaments keep working exactly as before this feature existed.
+ */
+export async function getTournamentField(tournamentId: string): Promise<Golfer[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("tournament_field")
+      .select("golfers(*)")
+      .eq("tournament_id", tournamentId);
+    if (error) throw error;
+    return (data ?? [])
+      .map((row: any) => row.golfers)
+      .filter(Boolean)
+      .sort((a: any, b: any) => (a.world_rank ?? 9999) - (b.world_rank ?? 9999));
+  } catch {
+    return [];
+  }
+}
+
 /** Golfer IDs a given user has already picked in prior One & Done weeks. */
 export async function getUsedGolferIds(userId: string): Promise<string[]> {
   if (!isSupabaseConfigured) return [];

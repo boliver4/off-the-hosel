@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
+import { GolferAvatar } from "@/components/GolferAvatar";
 import type { Golfer, Tournament } from "@/lib/data";
 
 export function OneDoneClient({
@@ -83,6 +84,7 @@ export function OneDoneClient({
           const selected = pickId === g.id;
           return (
             <div className="bigrow" key={g.id}>
+              <GolferAvatar name={g.name} photoUrl={g.headshot_url} />
               <div className="meta">
                 <b>{g.name}</b>
                 <small>{g.world_rank ? `World Rank #${g.world_rank}` : "Unranked"}</small>

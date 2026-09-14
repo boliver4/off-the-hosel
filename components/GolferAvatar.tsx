@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
+
 /**
  * A golfer's circular photo, or a colored initials badge when no photo
- * has been set yet (golfers.headshot_url is null). Add a real photo any
- * time by pasting an image URL into that column in Supabase's Table
+ * has been set yet (golfers.headshot_url is null) — or if the photo URL
+ * fails to actually load (broken link, moved image, etc.), so a bad URL
+ * never shows a broken-image icon on the live site. Add/fix a photo any
+ * time by editing that golfer's headshot_url column in Supabase's Table
  * Editor — it'll show up automatically, no code change needed.
  */
 export function GolferAvatar({
@@ -13,14 +19,17 @@ export function GolferAvatar({
   photoUrl?: string | null;
   size?: number;
 }) {
-  if (photoUrl) {
+  const [failed, setFailed] = useState(false);
+
+  if (photoUrl && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={photoUrl}
         alt={name}
         className="golfer-avatar"
-        style={{ width: size, height: size, fontSize: undefined }}
+        style={{ width: size, height: size }}
+        onError={() => setFailed(true)}
       />
     );
   }

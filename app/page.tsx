@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import { formatMoney, formatPoints } from "@/lib/scoring";
 import { PickPhoto } from "@/components/PickPhoto";
+import { GolferAvatar } from "@/components/GolferAvatar";
 
 export default async function HomePage() {
   const profile = await getCurrentProfile();
@@ -135,16 +136,19 @@ export default async function HomePage() {
           </div>
           <div className="tlc-list">
             {tournamentPicks.length === 0 ? (
-              <div className="trow">
+              <div className="tlc-row">
                 <span style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>No picks recorded yet this week.</span>
               </div>
             ) : (
               tournamentPicks.slice(0, 5).map((p: any, i: number) => (
-                <div className="trow" key={p.pick_id}>
-                  <b>{i + 1}</b>
-                  <span>{(p as any).golfers?.name}</span>
-                  <span>{(p as any).profiles?.display_name}</span>
-                  <span className="score">{formatPoints(p.points)}</span>
+                <div className="tlc-row" key={p.pick_id}>
+                  <span className="tlc-pos">{i + 1}</span>
+                  <span className="tlc-player">
+                    <GolferAvatar name={p.golfers?.name ?? ""} photoUrl={p.golfers?.headshot_url} size={26} />
+                    <b>{(p as any).golfers?.name}</b>
+                  </span>
+                  <span className="tlc-picked-by">{(p as any).profiles?.display_name}</span>
+                  <span className="tlc-pts">{formatPoints(p.points)}</span>
                 </div>
               ))
             )}

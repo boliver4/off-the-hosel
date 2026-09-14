@@ -17,6 +17,34 @@ html,body{margin:0;min-height:100%;background:#dfe6e2;font-family:"Avenir Next",
 body{display:flex;justify-content:center}
 button,input{font:inherit} button{cursor:pointer}
 svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== Interactive polish =====
+   Added globally so every button/link/input gets consistent hover,
+   active-press, and keyboard-focus feedback, without changing any
+   existing colors/sizes/layout above. Later, more specific rules in
+   this file still take precedence where they exist. */
+a,button,.select,.submit,.pickbtn,.nav,.tab,.back,.gold-cta,input,select,textarea{
+  transition:background-color .15s ease,color .15s ease,opacity .15s ease,transform .1s ease,box-shadow .15s ease;
+}
+a:hover,button:not(:disabled):hover,.select:hover,.submit:not(:disabled):hover,.pickbtn:hover,.back:hover,.gold-cta:hover{
+  filter:brightness(1.07);
+}
+button:not(:disabled):active,.select:active,.submit:not(:disabled):active,.pickbtn:active,.gold-cta:active{
+  transform:scale(.97);
+}
+a:focus-visible,button:focus-visible,.select:focus-visible,.submit:focus-visible,.pickbtn:focus-visible,.nav:focus-visible,.tab:focus-visible,.back:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:2px;
+}
+button:disabled,.submit:disabled{cursor:not-allowed}
+
+.spinner{
+  width:34px;height:34px;border-radius:50%;
+  border:3px solid var(--line);
+  border-top-color:var(--g);
+  animation:oth-spin .7s linear infinite;
+}
+@keyframes oth-spin{to{transform:rotate(360deg)}}
 .app{width:min(100%,520px);min-height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative}
 .header{background:var(--g);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .brand b{display:block;font-size:18px;letter-spacing:.8px} .brand small{display:block;font-size:8px;letter-spacing:2.3px;color:#dfc87c}
@@ -864,20 +892,21 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke
 }
 
 
-/* ===== Professional desktop redesign ===== */
+/* ===== Professional desktop redesign =====
+   Note: this section used to redefine --g, --gold, --ink, and --line here
+   with slightly different values than the canonical brand tokens at the
+   top of this file, which silently shifted the whole site's green/gold
+   off the actual brand colors. Only new tokens are added here now; the
+   brand colors always come from the single :root block at the top. */
 :root{
-  --g:#063f34;
   --g-dark:#04342b;
-  --gold:#e8b844;
   --gold2:#f1c557;
   --cream:#f6f4ed;
-  --ink:#10231e;
-  --line:#dce4df;
 }
 body{background:#f2f4f1}
 .app{background:var(--cream)}
 
-.pro-header{background:linear-gradient(90deg,#063f34,#03352d);min-height:86px;padding:0 34px;border-bottom:1px solid rgba(255,255,255,.08)}
+.pro-header{background:linear-gradient(90deg,var(--g),var(--g-dark));min-height:86px;padding:0 34px;border-bottom:1px solid rgba(255,255,255,.08)}
 .brand-pro{display:flex;align-items:center;gap:12px;cursor:pointer;min-width:245px}
 .brand-pro .brand-mark{width:47px;height:47px;border-right:1px solid rgba(232,184,68,.55);padding-right:12px;display:grid;place-items:center;color:var(--gold)}
 .brand-pro .brand-mark svg{width:36px;height:36px;stroke-width:1.7}
@@ -897,7 +926,7 @@ body{background:#f2f4f1}
 .eyebrow-pro{display:block;color:var(--gold2);font-size:10px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;margin-bottom:6px}
 .hero-copy h1{font-size:37px;line-height:.98;margin:0 0 7px;letter-spacing:-1px}
 .hero-copy p{font-size:13px;margin:0 0 14px}
-.gold-cta{border:0;border-radius:10px;background:linear-gradient(180deg,#f2c85d,#e4ae34);color:#10231e;padding:12px 18px;font-size:11px;font-weight:900;box-shadow:0 5px 14px rgba(0,0,0,.13)}
+.gold-cta{border:0;border-radius:10px;background:linear-gradient(180deg,#f2c85d,#e4ae34);color:var(--ink);padding:12px 18px;font-size:11px;font-weight:900;box-shadow:0 5px 14px rgba(0,0,0,.13)}
 .gold-cta span{margin-left:9px}.gold-cta.compact{padding:11px 16px}
 
 .next-pro{position:relative;display:flex;flex-direction:column;justify-content:space-between}
@@ -1070,7 +1099,7 @@ body{background:#f2f4f1}
   .oth-link.picks .pic{background-image:var(--picks-image)}
   .oth-link.info .pic{background-image:var(--info-image)}
   .oth-link .txt{display:flex;align-items:center;justify-content:space-between;padding:12px 13px 14px}
-  .oth-link .txt b{display:block;font-size:13px;color:#10231e}.oth-link .txt small{display:block;font-size:9px;color:#6f7e77;margin-top:3px}
+  .oth-link .txt b{display:block;font-size:13px;color:var(--ink)}.oth-link .txt small{display:block;font-size:9px;color:#6f7e77;margin-top:3px}
   .oth-link .txt i{width:34px;height:34px;border-radius:50%;background:#e9b947;color:#fff;display:grid;place-items:center;font-style:normal;font-size:16px;font-weight:900}
 
   .oth-lower{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
@@ -1504,7 +1533,7 @@ body{background:#f2f4f1}
     margin:0!important;
     border-radius:0!important;
     padding:8px 12px!important;
-    background:#063f34!important;
+    background:var(--g)!important;
   }
   .photo-brand{
     border:0;background:transparent;color:#fff;display:flex;align-items:center;gap:9px;padding:0;
@@ -1673,7 +1702,7 @@ body{background:#f2f4f1}
   .navx-ball{
     width:68px;height:68px;border-radius:50%;
     background:var(--navx-ball) center/cover;
-    border:2px solid #e8b844;
+    border:2px solid var(--gold);
     box-shadow:0 5px 16px rgba(0,0,0,.20);
   }
   .navx-divider{width:1px;height:58px;background:rgba(232,184,68,.65)}
@@ -1769,10 +1798,10 @@ body{background:#f2f4f1}
   .header.navx-header{
     display:flex!important;position:sticky;top:0;width:100%!important;
     min-height:64px!important;margin:0!important;border-radius:0!important;
-    padding:8px 12px!important;background:#063f34!important;
+    padding:8px 12px!important;background:var(--g)!important;
   }
   .navx-brand{border:0;background:transparent;color:#fff;display:flex;align-items:center;gap:9px;padding:0}
-  .navx-ball{width:40px;height:40px;border-radius:50%;background:var(--navx-ball) center/cover;border:1px solid #e8b844}
+  .navx-ball{width:40px;height:40px;border-radius:50%;background:var(--navx-ball) center/cover;border:1px solid var(--gold)}
   .navx-divider{display:none}
   .navx-brandcopy b{display:block;font:700 18px Georgia,serif}
   .navx-brandcopy small{display:block;font-size:7px;letter-spacing:2.5px;color:#efc55b}
@@ -1832,7 +1861,7 @@ body{background:#f2f4f1}
   .othx-ball{
     width:60px;height:60px;border-radius:50%;
     background:var(--othx-ball) center/cover;
-    border:2px solid #e8b844;
+    border:2px solid var(--gold);
     box-shadow:0 5px 14px rgba(0,0,0,.20);
   }
   .othx-rule{width:1px;height:56px;background:rgba(232,184,68,.58)}
@@ -1987,7 +2016,7 @@ body{background:#f2f4f1}
     z-index:100;
     height:64px;
     padding:8px 12px;
-    background:#063f34;
+    background:var(--g);
   }
   .othx-brand{
     display:flex;align-items:center;gap:9px;border:0;background:transparent;color:#fff;padding:0;
@@ -1995,7 +2024,7 @@ body{background:#f2f4f1}
   .othx-ball{
     width:40px;height:40px;border-radius:50%;
     background:var(--othx-ball) center/cover;
-    border:1px solid #e8b844;
+    border:1px solid var(--gold);
   }
   .othx-rule{display:none}
   .othx-brandcopy b{display:block;font:700 18px Georgia,serif}
@@ -2047,7 +2076,7 @@ body{background:#f2f4f1}
   }
   .othz-logo{
     width:68px;height:68px;border-radius:50%;background:var(--othz-logo) center/cover;
-    border:2px solid #e8b844;box-shadow:0 5px 14px rgba(0,0,0,.20)
+    border:2px solid var(--gold);box-shadow:0 5px 14px rgba(0,0,0,.20)
   }
   .othz-rule{width:1px;height:60px;background:rgba(232,184,68,.65)}
   .othz-brandtext b{display:block;font:700 30px/1 Georgia,"Times New Roman",serif;color:#fff;letter-spacing:-.4px}
@@ -2108,10 +2137,10 @@ body{background:#f2f4f1}
 
 @media(max-width:899px){
   .othz-header{
-    display:flex;align-items:center;height:64px;padding:8px 12px;position:sticky;top:0;z-index:120;background:#063f34
+    display:flex;align-items:center;height:64px;padding:8px 12px;position:sticky;top:0;z-index:120;background:var(--g)
   }
   .othz-brand{display:flex;align-items:center;gap:9px;border:0;background:transparent;color:#fff;padding:0;text-align:left}
-  .othz-logo{width:40px;height:40px;border-radius:50%;background:var(--othz-logo) center/cover;border:1px solid #e8b844}
+  .othz-logo{width:40px;height:40px;border-radius:50%;background:var(--othz-logo) center/cover;border:1px solid var(--gold)}
   .othz-rule{display:none}.othz-brandtext b{display:block;font:700 18px Georgia,serif}.othz-brandtext small{display:block;font-size:7px;letter-spacing:2.5px;color:#efc55b}
   .othz-nav,.othz-sep{display:none}
   .othz-profile{margin-left:auto;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(0,25,20,.3);color:#fff;display:grid;place-items:center;padding:0}
@@ -2166,7 +2195,7 @@ body{background:#f2f4f1}
   .otha-logo{
     width:68px;height:68px;border-radius:50%;
     background:var(--otha-logo) center/cover;
-    border:2px solid #e8b844;
+    border:2px solid var(--gold);
     box-shadow:0 5px 14px rgba(0,0,0,.19);
   }
   .otha-divider{width:1px;height:60px;background:rgba(232,184,68,.62)}
@@ -2308,10 +2337,10 @@ body{background:#f2f4f1}
     position:sticky;
     top:0;
     z-index:140;
-    background:#063f34;
+    background:var(--g);
   }
   .otha-brand{display:flex;align-items:center;gap:9px;border:0;background:transparent;color:#fff;padding:0;text-align:left}
-  .otha-logo{width:40px;height:40px;border-radius:50%;background:var(--otha-logo) center/cover;border:1px solid #e8b844}
+  .otha-logo{width:40px;height:40px;border-radius:50%;background:var(--otha-logo) center/cover;border:1px solid var(--gold)}
   .otha-divider{display:none}
   .otha-copy b{display:block;font:700 18px Georgia,serif}
   .otha-copy small{display:block;font-size:7px;letter-spacing:2.5px;color:#efc55b}
@@ -2541,7 +2570,7 @@ body{background:#f2f4f1}
     border-radius:50%;
     display:grid;
     place-items:center;
-    color:#e8b844;
+    color:var(--gold);
     border:1px solid rgba(232,184,68,.45);
     background:rgba(255,255,255,.02);
   }
@@ -2715,7 +2744,7 @@ body{background:#f2f4f1}
     border-radius:50%;
     display:grid;
     place-items:center;
-    color:#e8b844;
+    color:var(--gold);
     border:1px solid rgba(232,184,68,.45);
   }
 
@@ -2774,7 +2803,7 @@ body{background:#f2f4f1}
 
   .oths-item svg .icon-accent{
     fill:none;
-    stroke:#e8b844;
+    stroke:var(--gold);
     stroke-width:1.9;
     stroke-linecap:round;
     stroke-linejoin:round;
@@ -2856,7 +2885,7 @@ body{background:#f2f4f1}
     border-radius:50%;
     display:grid;
     place-items:center;
-    color:#e8b844;
+    color:var(--gold);
     border:1px solid rgba(232,184,68,.5);
     background:rgba(255,255,255,.015);
   }
@@ -3017,7 +3046,7 @@ body{background:#f2f4f1}
     border-radius:50%;
     display:grid;
     place-items:center;
-    color:#e8b844;
+    color:var(--gold);
     border:1px solid rgba(232,184,68,.45);
   }
 
@@ -3091,7 +3120,7 @@ body{background:#f2f4f1}
   margin:0;
   font-size:30px;
   line-height:1;
-  color:#10231e;
+  color:var(--ink);
 }
 .howto-hero p{
   margin:7px 0 0;
@@ -4193,7 +4222,7 @@ body{background:#f2f4f1}
 
 .option1-pick .pick-footer b{
   display:block;
-  color:#10231e;
+  color:var(--ink);
   font-size:13px;
 }
 
@@ -4381,7 +4410,7 @@ body{background:#f2f4f1}
 .tour-pick-footer b{
   display:block;
   font-size:12px;
-  color:#10231e;
+  color:var(--ink);
 }
 
 .tour-pick-footer small{
@@ -4665,7 +4694,7 @@ body{background:#f2f4f1}
   display:grid!important;
   grid-template-columns:repeat(4,minmax(0,1fr))!important;
   min-height:58px!important;
-  background:#063f34!important;
+  background:var(--g)!important;
   color:#fff!important;
 }
 
@@ -4717,7 +4746,7 @@ body{background:#f2f4f1}
 
 .approved-pick-footer-copy b{
   display:block!important;
-  color:#10231e!important;
+  color:var(--ink)!important;
   font-size:13px!important;
   line-height:1.1!important;
   font-weight:900!important;

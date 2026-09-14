@@ -1,0 +1,510 @@
+-- Off The Hosel — schema.sql
+-- Run this whole file once against your Supabase project's SQL editor
+-- (Database -> SQL Editor -> New query -> paste -> Run).
+--
+-- Design notes:
+--  * Scoring rule: a pick's fantasy points = golfer's tournament winnings ($)
+--    times tournaments.winnings_scoring_pct / 100, floored at 0 if the golfer
+--    missed the cut (or simply won $0). The percentage is set per-tournament
+--    so majors can be weighted higher than regular events. See the
+--    `pick_points` view / `fantasy_points()` function below — this is the
+--    single source of truth for the calculation, used by every screen.
+--  * Results are entered manually by a commissioner/admin — there is no
+--    live stats integration. tournament_results is the row a commissioner
+--    fills in per golfer per tournament after the event wraps.
+--  * tournament_results is keyed by tournament_id (which itself carries a
+--    `course` column), so course-level historical analytics per golfer are
+--    possible later without a schema change.
+
+-- ---------------------------------------------------------------------------
+-- Extensions
+-- ---------------------------------------------------------------------------
+create extension if not exists "pgcrypto";
+
+-- ---------------------------------------------------------------------------
+-- profiles
+-- ---------------------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  display_name text not null,
+  is_admin boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.profiles is 'One row per league member, keyed to auth.users.';
+
+-- Auto-create a profile row when a new auth user signs up.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1))
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ---------------------------------------------------------------------------
+-- golfers
+-- ---------------------------------------------------------------------------
+create table if not exists public.golfers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  world_rank integer,
+  active boolean not null default true,
+  headshot_url text,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists golfers_name_key on public.golfers (name);
+
+-- ---------------------------------------------------------------------------
+-- tournaments
+-- ---------------------------------------------------------------------------
+create table if not exists public.tournaments (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  course text,
+  location text,
+  start_date date not null,
+  end_date date not null,
+  is_major boolean not null default false,
+  field_size integer,
+  purse numeric(12, 2),
+  -- Percentage of a golfer's tournament winnings that convert to fantasy
+  -- points for a pick, e.g. 1.00 = 1%. Set higher for majors.
+  winnings_scoring_pct numeric(6, 3) not null default 1.000,
+  pick_lock_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists tournaments_start_date_idx on public.tournaments (start_date);
+
+-- ---------------------------------------------------------------------------
+-- golfer_salaries (Major Challenge salaries, can vary per tournament)
+-- ---------------------------------------------------------------------------
+create table if not exists public.golfer_salaries (
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  golfer_id uuid not null references public.golfers (id) on delete cascade,
+  salary numeric(10, 2) not null,
+  primary key (tournament_id, golfer_id)
+);
+
+-- ---------------------------------------------------------------------------
+-- tournament_results (entered manually by the commissioner)
+-- ---------------------------------------------------------------------------
+create table if not exists public.tournament_results (
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  golfer_id uuid not null references public.golfers (id) on delete cascade,
+  winnings numeric(12, 2) not null default 0,
+  made_cut boolean not null default true,
+  finish_position text, -- text to allow "T4", "CUT", "WD" etc.
+  entered_by uuid references public.profiles (id),
+  entered_at timestamptz not null default now(),
+  primary key (tournament_id, golfer_id)
+);
+
+-- ---------------------------------------------------------------------------
+-- Fantasy points calculation — single source of truth
+-- ---------------------------------------------------------------------------
+create or replace function public.fantasy_points(p_winnings numeric, p_made_cut boolean, p_pct numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select case
+    when p_made_cut is false then 0
+    else round(greatest(p_winnings, 0) * (p_pct / 100.0), 2)
+  end;
+$$;
+
+-- Convenience view: every entered result, with the points it's worth.
+create or replace view public.tournament_result_points as
+select
+  tr.tournament_id,
+  tr.golfer_id,
+  tr.winnings,
+  tr.made_cut,
+  tr.finish_position,
+  t.winnings_scoring_pct,
+  public.fantasy_points(tr.winnings, tr.made_cut, t.winnings_scoring_pct) as points
+from public.tournament_results tr
+join public.tournaments t on t.id = tr.tournament_id;
+
+-- ---------------------------------------------------------------------------
+-- one_and_done_picks
+-- ---------------------------------------------------------------------------
+create table if not exists public.one_and_done_picks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  golfer_id uuid not null references public.golfers (id) on delete cascade,
+  picked_at timestamptz not null default now(),
+  unique (user_id, tournament_id)
+);
+
+create index if not exists odp_user_idx on public.one_and_done_picks (user_id);
+
+-- Enforce "can't reuse a golfer" at the database level: a user may not have
+-- two picks (across different tournaments) with the same golfer_id.
+create or replace function public.check_golfer_not_reused()
+returns trigger
+language plpgsql
+as $$
+begin
+  if exists (
+    select 1 from public.one_and_done_picks
+    where user_id = new.user_id
+      and golfer_id = new.golfer_id
+      and tournament_id <> new.tournament_id
+      and id <> coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid)
+  ) then
+    raise exception 'You have already used this golfer this season.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists odp_no_reuse on public.one_and_done_picks;
+create trigger odp_no_reuse
+  before insert or update on public.one_and_done_picks
+  for each row execute procedure public.check_golfer_not_reused();
+
+-- ---------------------------------------------------------------------------
+-- major_lineups / major_lineup_golfers
+-- ---------------------------------------------------------------------------
+create table if not exists public.major_lineups (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  submitted_at timestamptz not null default now(),
+  unique (user_id, tournament_id)
+);
+
+create table if not exists public.major_lineup_golfers (
+  lineup_id uuid not null references public.major_lineups (id) on delete cascade,
+  golfer_id uuid not null references public.golfers (id) on delete cascade,
+  salary_at_pick numeric(10, 2) not null,
+  primary key (lineup_id, golfer_id)
+);
+
+-- Enforce the 5-golfer / $50,000 cap at the database level via a check on
+-- insert count + a view; simplest reliable enforcement lives in the app
+-- layer (see lib/scoring.ts / the major-challenge page), backed by this
+-- helper view a commissioner can audit against.
+create or replace view public.major_lineup_totals as
+select
+  ml.id as lineup_id,
+  ml.user_id,
+  ml.tournament_id,
+  count(mlg.golfer_id) as golfer_count,
+  coalesce(sum(mlg.salary_at_pick), 0) as total_salary
+from public.major_lineups ml
+left join public.major_lineup_golfers mlg on mlg.lineup_id = ml.id
+group by ml.id, ml.user_id, ml.tournament_id;
+
+-- ---------------------------------------------------------------------------
+-- Standings views
+-- ---------------------------------------------------------------------------
+
+-- One & Done: points per user per tournament (0 if no result entered yet).
+create or replace view public.one_and_done_pick_points as
+select
+  p.id as pick_id,
+  p.user_id,
+  p.tournament_id,
+  p.golfer_id,
+  p.picked_at,
+  coalesce(trp.points, 0) as points,
+  trp.made_cut,
+  trp.winnings
+from public.one_and_done_picks p
+left join public.tournament_result_points trp
+  on trp.tournament_id = p.tournament_id and trp.golfer_id = p.golfer_id;
+
+-- Season standings: total One & Done points per user, across all weeks.
+create or replace view public.one_and_done_standings as
+select
+  pr.id as user_id,
+  pr.display_name,
+  coalesce(sum(pp.points), 0) as total_points,
+  count(pp.pick_id) as weeks_picked
+from public.profiles pr
+left join public.one_and_done_pick_points pp on pp.user_id = pr.id
+group by pr.id, pr.display_name
+order by total_points desc;
+
+-- Major Challenge standings: total lineup points per user per tournament.
+create or replace view public.major_lineup_points as
+select
+  ml.id as lineup_id,
+  ml.user_id,
+  ml.tournament_id,
+  coalesce(sum(coalesce(trp.points, 0)), 0) as total_points
+from public.major_lineups ml
+join public.major_lineup_golfers mlg on mlg.lineup_id = ml.id
+left join public.tournament_result_points trp
+  on trp.tournament_id = ml.tournament_id and trp.golfer_id = mlg.golfer_id
+group by ml.id, ml.user_id, ml.tournament_id;
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security
+-- ---------------------------------------------------------------------------
+alter table public.profiles enable row level security;
+alter table public.golfers enable row level security;
+alter table public.tournaments enable row level security;
+alter table public.golfer_salaries enable row level security;
+alter table public.tournament_results enable row level security;
+alter table public.one_and_done_picks enable row level security;
+alter table public.major_lineups enable row level security;
+alter table public.major_lineup_golfers enable row level security;
+
+-- Helper: is the current user an admin?
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer set search_path = public
+as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
+-- profiles: everyone signed in can read all profiles (for leaderboard names);
+-- a user can update only their own row (display_name); admin flag can only
+-- be changed by an existing admin.
+drop policy if exists "profiles are readable by authenticated users" on public.profiles;
+create policy "profiles are readable by authenticated users"
+  on public.profiles for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users can update their own profile" on public.profiles;
+create policy "users can update their own profile"
+  on public.profiles for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- Prevent a non-admin from granting themselves admin via that same update
+-- (kept as a trigger rather than a self-referential RLS check, which would
+-- risk recursive policy evaluation on this table).
+create or replace function public.prevent_self_admin_escalation()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.is_admin is distinct from old.is_admin and not public.is_admin() then
+    new.is_admin := old.is_admin;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_no_self_escalation on public.profiles;
+create trigger profiles_no_self_escalation
+  before update on public.profiles
+  for each row execute procedure public.prevent_self_admin_escalation();
+
+-- golfers: readable by everyone signed in; writable only by admins.
+drop policy if exists "golfers are readable by authenticated users" on public.golfers;
+create policy "golfers are readable by authenticated users"
+  on public.golfers for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admins manage golfers" on public.golfers;
+create policy "admins manage golfers"
+  on public.golfers for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- tournaments: readable by everyone signed in; writable only by admins.
+drop policy if exists "tournaments are readable by authenticated users" on public.tournaments;
+create policy "tournaments are readable by authenticated users"
+  on public.tournaments for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admins manage tournaments" on public.tournaments;
+create policy "admins manage tournaments"
+  on public.tournaments for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- golfer_salaries: readable by everyone signed in; writable only by admins.
+drop policy if exists "salaries are readable by authenticated users" on public.golfer_salaries;
+create policy "salaries are readable by authenticated users"
+  on public.golfer_salaries for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admins manage salaries" on public.golfer_salaries;
+create policy "admins manage salaries"
+  on public.golfer_salaries for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- tournament_results: readable by everyone signed in; writable only by admins.
+drop policy if exists "results are readable by authenticated users" on public.tournament_results;
+create policy "results are readable by authenticated users"
+  on public.tournament_results for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admins manage results" on public.tournament_results;
+create policy "admins manage results"
+  on public.tournament_results for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- one_and_done_picks: readable by everyone signed in (leaderboard needs to
+-- show who picked whom); a user may only insert/update/delete their OWN picks.
+drop policy if exists "picks are readable by authenticated users" on public.one_and_done_picks;
+create policy "picks are readable by authenticated users"
+  on public.one_and_done_picks for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users manage their own picks" on public.one_and_done_picks;
+create policy "users manage their own picks"
+  on public.one_and_done_picks for all
+  to authenticated
+  using (auth.uid() = user_id or public.is_admin())
+  with check (auth.uid() = user_id or public.is_admin());
+
+-- major_lineups / major_lineup_golfers: same pattern.
+drop policy if exists "lineups are readable by authenticated users" on public.major_lineups;
+create policy "lineups are readable by authenticated users"
+  on public.major_lineups for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users manage their own lineups" on public.major_lineups;
+create policy "users manage their own lineups"
+  on public.major_lineups for all
+  to authenticated
+  using (auth.uid() = user_id or public.is_admin())
+  with check (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "lineup golfers are readable by authenticated users" on public.major_lineup_golfers;
+create policy "lineup golfers are readable by authenticated users"
+  on public.major_lineup_golfers for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users manage their own lineup golfers" on public.major_lineup_golfers;
+create policy "users manage their own lineup golfers"
+  on public.major_lineup_golfers for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.major_lineups ml
+      where ml.id = lineup_id and (ml.user_id = auth.uid() or public.is_admin())
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.major_lineups ml
+      where ml.id = lineup_id and (ml.user_id = auth.uid() or public.is_admin())
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- Grants (Supabase projects grant these by default via ALTER DEFAULT
+-- PRIVILEGES for new tables/views created by the postgres role, but they're
+-- spelled out explicitly here for safety — RLS above still governs row
+-- access; these just allow the roles to query the objects at all).
+-- ---------------------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update, delete on
+  public.profiles,
+  public.golfers,
+  public.tournaments,
+  public.golfer_salaries,
+  public.tournament_results,
+  public.one_and_done_picks,
+  public.major_lineups,
+  public.major_lineup_golfers
+to authenticated;
+
+grant select on
+  public.tournament_result_points,
+  public.one_and_done_pick_points,
+  public.one_and_done_standings,
+  public.major_lineup_points,
+  public.major_lineup_totals
+to authenticated;
+
+grant execute on function public.fantasy_points(numeric, boolean, numeric) to authenticated;
+grant execute on function public.is_admin() to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Seed data: 2026 PGA Tour schedule (from the prototype's TEST_2026_TOURNAMENTS)
+-- ---------------------------------------------------------------------------
+insert into public.tournaments (name, course, location, start_date, end_date, is_major, winnings_scoring_pct, purse)
+values
+  ('Sony Open in Hawaii', 'Waialae Country Club', 'Honolulu, HI', '2026-01-15', '2026-01-18', false, 1.0, 8300000),
+  ('Farmers Insurance Open', 'Torrey Pines (South)', 'San Diego, CA', '2026-01-29', '2026-02-01', false, 1.0, 9200000),
+  ('AT&T Pebble Beach Pro-Am', 'Pebble Beach Golf Links', 'Pebble Beach, CA', '2026-02-12', '2026-02-15', false, 1.0, 9200000),
+  ('The Genesis Invitational', 'Riviera Country Club', 'Pacific Palisades, CA', '2026-02-19', '2026-02-22', false, 1.5, 20000000),
+  ('Arnold Palmer Invitational', 'Bay Hill Club & Lodge', 'Orlando, FL', '2026-03-05', '2026-03-08', false, 1.5, 20000000),
+  ('THE PLAYERS Championship', 'TPC Sawgrass (Stadium)', 'Ponte Vedra Beach, FL', '2026-03-12', '2026-03-15', false, 1.5, 25000000),
+  ('Masters Tournament', 'Augusta National Golf Club', 'Augusta, GA', '2026-04-09', '2026-04-12', true, 3.0, 20000000),
+  ('PGA Championship', 'Aronimink Golf Club', 'Newtown Square, PA', '2026-05-14', '2026-05-17', true, 3.0, 19000000),
+  ('U.S. Open', 'Shinnecock Hills Golf Club', 'Southampton, NY', '2026-06-18', '2026-06-21', true, 3.0, 21500000),
+  ('The Open Championship', 'Royal Birkdale Golf Club', 'Southport, England', '2026-07-16', '2026-07-19', true, 3.0, 17000000),
+  ('TOUR Championship', 'East Lake Golf Club', 'Atlanta, GA', '2026-08-27', '2026-08-30', false, 2.0, 100000000)
+on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Seed data: golfers (top current PGA Tour players, approximate world ranks)
+-- ---------------------------------------------------------------------------
+insert into public.golfers (name, world_rank, active) values
+  ('Scottie Scheffler', 1, true),
+  ('Rory McIlroy', 2, true),
+  ('Xander Schauffele', 3, true),
+  ('Collin Morikawa', 4, true),
+  ('Ludvig Åberg', 5, true),
+  ('Viktor Hovland', 6, true),
+  ('Patrick Cantlay', 7, true),
+  ('Wyndham Clark', 8, true),
+  ('Tommy Fleetwood', 9, true),
+  ('Hideki Matsuyama', 10, true),
+  ('Justin Thomas', 11, true),
+  ('Sahith Theegala', 12, true),
+  ('Sungjae Im', 13, true),
+  ('Brian Harman', 14, true),
+  ('Russell Henley', 15, true),
+  ('Max Homa', 16, true),
+  ('Tony Finau', 17, true),
+  ('Akshay Bhatia', 18, true),
+  ('Sepp Straka', 19, true),
+  ('Keegan Bradley', 20, true),
+  ('Jason Day', 21, true),
+  ('Corey Conners', 22, true),
+  ('Shane Lowry', 23, true),
+  ('Cameron Young', 24, true),
+  ('Denny McCarthy', 25, true),
+  ('Byeong Hun An', 26, true),
+  ('J.T. Poston', 27, true),
+  ('Aaron Rai', 28, true),
+  ('Billy Horschel', 29, true),
+  ('Chris Kirk', 30, true)
+on conflict (name) do nothing;

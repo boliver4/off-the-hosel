@@ -17,6 +17,34 @@
 --    possible later without a schema change.
 
 -- ---------------------------------------------------------------------------
+-- Reset (safe to re-run): drop everything this script creates first, so
+-- running this file always starts from a clean slate no matter what
+-- partial/failed state is currently in the database.
+-- ---------------------------------------------------------------------------
+drop view if exists public.major_lineup_points cascade;
+drop view if exists public.one_and_done_standings cascade;
+drop view if exists public.one_and_done_pick_points cascade;
+drop view if exists public.major_lineup_totals cascade;
+drop view if exists public.tournament_result_points cascade;
+
+drop table if exists public.major_lineup_golfers cascade;
+drop table if exists public.major_lineups cascade;
+drop table if exists public.one_and_done_picks cascade;
+drop table if exists public.tournament_results cascade;
+drop table if exists public.golfer_salaries cascade;
+drop table if exists public.tournaments cascade;
+drop table if exists public.golfers cascade;
+drop table if exists public.profiles cascade;
+
+drop function if exists public.check_golfer_not_reused() cascade;
+drop function if exists public.prevent_self_admin_escalation() cascade;
+drop function if exists public.is_admin() cascade;
+drop function if exists public.fantasy_points(numeric, boolean, numeric) cascade;
+drop function if exists public.handle_new_user() cascade;
+
+drop trigger if exists on_auth_user_created on auth.users;
+
+-- ---------------------------------------------------------------------------
 -- Extensions
 -- ---------------------------------------------------------------------------
 create extension if not exists "pgcrypto";
@@ -280,13 +308,15 @@ as $$
   select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
 $$;
 
--- profiles: everyone signed in can read all profiles (for leaderboard names);
--- a user can update only their own row (display_name); admin flag can only
--- be changed by an existing admin.
+-- profiles: readable by everyone, including logged-out visitors (the public
+-- homepage shows the season leaderboard by display name); a user can update
+-- only their own row (display_name); admin flag can only be changed by an
+-- existing admin.
 drop policy if exists "profiles are readable by authenticated users" on public.profiles;
-create policy "profiles are readable by authenticated users"
+drop policy if exists "profiles are readable by everyone" on public.profiles;
+create policy "profiles are readable by everyone"
   on public.profiles for select
-  to authenticated
+  to public
   using (true);
 
 drop policy if exists "users can update their own profile" on public.profiles;
@@ -317,11 +347,13 @@ create trigger profiles_no_self_escalation
   before update on public.profiles
   for each row execute procedure public.prevent_self_admin_escalation();
 
--- golfers: readable by everyone signed in; writable only by admins.
+-- golfers: readable by everyone, including logged-out visitors; writable
+-- only by admins.
 drop policy if exists "golfers are readable by authenticated users" on public.golfers;
-create policy "golfers are readable by authenticated users"
+drop policy if exists "golfers are readable by everyone" on public.golfers;
+create policy "golfers are readable by everyone"
   on public.golfers for select
-  to authenticated
+  to public
   using (true);
 
 drop policy if exists "admins manage golfers" on public.golfers;
@@ -331,11 +363,13 @@ create policy "admins manage golfers"
   using (public.is_admin())
   with check (public.is_admin());
 
--- tournaments: readable by everyone signed in; writable only by admins.
+-- tournaments: readable by everyone, including logged-out visitors (the
+-- public homepage shows the next/latest tournament); writable only by admins.
 drop policy if exists "tournaments are readable by authenticated users" on public.tournaments;
-create policy "tournaments are readable by authenticated users"
+drop policy if exists "tournaments are readable by everyone" on public.tournaments;
+create policy "tournaments are readable by everyone"
   on public.tournaments for select
-  to authenticated
+  to public
   using (true);
 
 drop policy if exists "admins manage tournaments" on public.tournaments;
@@ -359,11 +393,14 @@ create policy "admins manage salaries"
   using (public.is_admin())
   with check (public.is_admin());
 
--- tournament_results: readable by everyone signed in; writable only by admins.
+-- tournament_results: readable by everyone, including logged-out visitors
+-- (needed to compute points shown on the public leaderboard); writable only
+-- by admins.
 drop policy if exists "results are readable by authenticated users" on public.tournament_results;
-create policy "results are readable by authenticated users"
+drop policy if exists "results are readable by everyone" on public.tournament_results;
+create policy "results are readable by everyone"
   on public.tournament_results for select
-  to authenticated
+  to public
   using (true);
 
 drop policy if exists "admins manage results" on public.tournament_results;
@@ -373,12 +410,14 @@ create policy "admins manage results"
   using (public.is_admin())
   with check (public.is_admin());
 
--- one_and_done_picks: readable by everyone signed in (leaderboard needs to
--- show who picked whom); a user may only insert/update/delete their OWN picks.
+-- one_and_done_picks: readable by everyone, including logged-out visitors
+-- (the public leaderboard shows who picked whom); a user may only
+-- insert/update/delete their OWN picks.
 drop policy if exists "picks are readable by authenticated users" on public.one_and_done_picks;
-create policy "picks are readable by authenticated users"
+drop policy if exists "picks are readable by everyone" on public.one_and_done_picks;
+create policy "picks are readable by everyone"
   on public.one_and_done_picks for select
-  to authenticated
+  to public
   using (true);
 
 drop policy if exists "users manage their own picks" on public.one_and_done_picks;
@@ -433,7 +472,33 @@ create policy "users manage their own lineup golfers"
 -- ---------------------------------------------------------------------------
 grant usage on schema public to anon, authenticated;
 
-grant select, insert, update, delete on
+-- Read access: granted broadly to both anon (logged-out visitors) and
+-- authenticated users. The RLS policies above still govern which of these
+-- are actually public (tournaments, golfers, profiles, tournament_results,
+-- one_and_done_picks) versus authenticated-only in practice (golfer_salaries,
+-- major_lineups, major_lineup_golfers currently have no "to public" policy).
+grant select on
+  public.profiles,
+  public.golfers,
+  public.tournaments,
+  public.golfer_salaries,
+  public.tournament_results,
+  public.one_and_done_picks,
+  public.major_lineups,
+  public.major_lineup_golfers
+to anon, authenticated;
+
+grant select on
+  public.tournament_result_points,
+  public.one_and_done_pick_points,
+  public.one_and_done_standings,
+  public.major_lineup_points,
+  public.major_lineup_totals
+to anon, authenticated;
+
+-- Write access: authenticated users only (RLS above further restricts to
+-- "own row" or admin-only as appropriate).
+grant insert, update, delete on
   public.profiles,
   public.golfers,
   public.tournaments,
@@ -444,16 +509,8 @@ grant select, insert, update, delete on
   public.major_lineup_golfers
 to authenticated;
 
-grant select on
-  public.tournament_result_points,
-  public.one_and_done_pick_points,
-  public.one_and_done_standings,
-  public.major_lineup_points,
-  public.major_lineup_totals
-to authenticated;
-
-grant execute on function public.fantasy_points(numeric, boolean, numeric) to authenticated;
-grant execute on function public.is_admin() to authenticated;
+grant execute on function public.fantasy_points(numeric, boolean, numeric) to anon, authenticated;
+grant execute on function public.is_admin() to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Seed data: 2026 PGA Tour schedule (from the prototype's TEST_2026_TOURNAMENTS)

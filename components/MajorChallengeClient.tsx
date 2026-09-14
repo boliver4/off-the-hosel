@@ -50,8 +50,12 @@ export function MajorChallengeClient({
     setSaving(true);
     try {
       const supabase = createClient();
-      const { data: lineupRow, error: lineupError } = await supabase
-        .from("major_lineups")
+      // Cast to `any` on these .from(...) calls: the Supabase-generated
+      // Database type doesn't infer these tables' Insert types correctly
+      // through the upsert()/insert() overloads (a known quirk), even
+      // though the shapes below are correct and match the schema.
+      const { data: lineupRow, error: lineupError } = await (supabase
+        .from("major_lineups") as any)
         .upsert({ user_id: userId, tournament_id: tournamentId }, { onConflict: "user_id,tournament_id" })
         .select()
         .single();
@@ -63,7 +67,7 @@ export function MajorChallengeClient({
         golfer_id,
         salary_at_pick: byId.get(golfer_id)?.salary ?? 0,
       }));
-      const { error: golfersError } = await supabase.from("major_lineup_golfers").insert(rows);
+      const { error: golfersError } = await (supabase.from("major_lineup_golfers") as any).insert(rows);
       if (golfersError) throw golfersError;
 
       toast("Lineup submitted");

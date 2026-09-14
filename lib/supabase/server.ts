@@ -9,7 +9,7 @@ import type { Database } from "@/lib/database.types";
  * Guarded against missing env vars so `next build` never crashes during
  * static generation when Supabase credentials haven't been configured yet.
  */
-export function createClient() {
+export function createClient(): any {
   const cookieStore = cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";

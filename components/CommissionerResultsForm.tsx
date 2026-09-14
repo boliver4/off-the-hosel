@@ -25,7 +25,7 @@ export function CommissionerResultsForm({ tournaments, golfers }: { tournaments:
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.from("tournament_results").upsert(
+      const { error } = await (supabase.from("tournament_results") as any).upsert(
         {
           tournament_id: tournamentId,
           golfer_id: golferId,

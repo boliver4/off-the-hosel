@@ -1,6 +1,13 @@
 // Hand-written types mirroring supabase/schema.sql.
 // If you regenerate this from the Supabase CLI (`supabase gen types typescript`),
 // this file's shape should stay compatible with how lib/supabase/*.ts use it.
+//
+// Every table/view entry includes `Relationships: []` because @supabase/supabase-js's
+// internal GenericTable/GenericView constraint requires that field to be present for
+// its typed query builder to infer Insert/Update types correctly. Omitting it causes
+// `.from(...).insert()/.upsert()` calls to silently fall back to a `never[]` type,
+// which is why a hand-written types file without it will compile fine on its own but
+// break every call site that touches these tables.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -26,6 +33,7 @@ export interface Database {
           is_admin?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
       golfers: {
         Row: {
@@ -45,6 +53,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["golfers"]["Insert"]>;
+        Relationships: [];
       };
       tournaments: {
         Row: {
@@ -76,11 +85,13 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["tournaments"]["Insert"]>;
+        Relationships: [];
       };
       golfer_salaries: {
         Row: { tournament_id: string; golfer_id: string; salary: number };
         Insert: { tournament_id: string; golfer_id: string; salary: number };
         Update: Partial<Database["public"]["Tables"]["golfer_salaries"]["Insert"]>;
+        Relationships: [];
       };
       tournament_results: {
         Row: {
@@ -102,6 +113,7 @@ export interface Database {
           entered_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["tournament_results"]["Insert"]>;
+        Relationships: [];
       };
       one_and_done_picks: {
         Row: {
@@ -119,6 +131,7 @@ export interface Database {
           picked_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["one_and_done_picks"]["Insert"]>;
+        Relationships: [];
       };
       major_lineups: {
         Row: {
@@ -134,11 +147,13 @@ export interface Database {
           submitted_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["major_lineups"]["Insert"]>;
+        Relationships: [];
       };
       major_lineup_golfers: {
         Row: { lineup_id: string; golfer_id: string; salary_at_pick: number };
         Insert: { lineup_id: string; golfer_id: string; salary_at_pick: number };
         Update: Partial<Database["public"]["Tables"]["major_lineup_golfers"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: {
@@ -152,6 +167,7 @@ export interface Database {
           winnings_scoring_pct: number;
           points: number;
         };
+        Relationships: [];
       };
       one_and_done_pick_points: {
         Row: {
@@ -164,6 +180,7 @@ export interface Database {
           made_cut: boolean | null;
           winnings: number | null;
         };
+        Relationships: [];
       };
       one_and_done_standings: {
         Row: {
@@ -172,6 +189,7 @@ export interface Database {
           total_points: number;
           weeks_picked: number;
         };
+        Relationships: [];
       };
       major_lineup_points: {
         Row: {
@@ -180,6 +198,7 @@ export interface Database {
           tournament_id: string;
           total_points: number;
         };
+        Relationships: [];
       };
       major_lineup_totals: {
         Row: {
@@ -189,6 +208,7 @@ export interface Database {
           golfer_count: number;
           total_salary: number;
         };
+        Relationships: [];
       };
     };
     Functions: {
@@ -201,5 +221,7 @@ export interface Database {
         Returns: boolean;
       };
     };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

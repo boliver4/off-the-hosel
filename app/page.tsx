@@ -138,7 +138,7 @@ export default async function HomePage() {
                 <span style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>No picks recorded yet this week.</span>
               </div>
             ) : (
-              tournamentPicks.slice(0, 5).map((p, i) => (
+              tournamentPicks.slice(0, 5).map((p: any, i: number) => (
                 <div className="trow" key={p.pick_id}>
                   <b>{i + 1}</b>
                   <span>{(p as any).golfers?.name}</span>

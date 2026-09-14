@@ -62,14 +62,14 @@ export async function getUsedGolferIds(userId: string): Promise<string[]> {
     const supabase = createClient();
     const { data, error } = await supabase.from("one_and_done_picks").select("golfer_id").eq("user_id", userId);
     if (error) throw error;
-    return (data ?? []).map((r) => r.golfer_id);
+    return (data ?? []).map((r: any) => r.golfer_id);
   } catch {
     return [];
   }
 }
 
 /** A user's pick for a specific tournament, if any. */
-export async function getPickForTournament(userId: string, tournamentId: string) {
+export async function getPickForTournament(userId: string, tournamentId: string): Promise<any | null> {
   if (!isSupabaseConfigured) return null;
   try {
     const supabase = createClient();
@@ -87,7 +87,7 @@ export async function getPickForTournament(userId: string, tournamentId: string)
 }
 
 /** All of a user's picks across the season, newest first, with points + golfer/tournament info. */
-export async function getUserPicksWithDetails(userId: string) {
+export async function getUserPicksWithDetails(userId: string): Promise<any[]> {
   if (!isSupabaseConfigured) return [];
   try {
     const supabase = createClient();
@@ -105,9 +105,9 @@ export async function getUserPicksWithDetails(userId: string) {
       .select("*")
       .eq("user_id", userId);
 
-    const pointsByPickId = new Map((pointsRows ?? []).map((p) => [p.pick_id, p]));
+    const pointsByPickId = new Map<string, any>((pointsRows ?? []).map((p: any) => [p.pick_id, p]));
 
-    return (data ?? []).map((pick) => ({
+    return (data ?? []).map((pick: any) => ({
       ...pick,
       points: pointsByPickId.get(pick.id)?.points ?? 0,
       made_cut: pointsByPickId.get(pick.id)?.made_cut ?? null,
@@ -134,7 +134,7 @@ export async function getOneAndDoneStandings(): Promise<OneAndDoneStanding[]> {
 }
 
 /** Every pick made for a given tournament, with points — for the live leaderboard. */
-export async function getPicksForTournament(tournamentId: string) {
+export async function getPicksForTournament(tournamentId: string): Promise<any[]> {
   if (!isSupabaseConfigured) return [];
   try {
     const supabase = createClient();
@@ -150,7 +150,7 @@ export async function getPicksForTournament(tournamentId: string) {
       .from("one_and_done_pick_points")
       .select("*")
       .eq("tournament_id", tournamentId);
-    const pointsByPickId = new Map((pointsRows ?? []).map((p) => [p.pick_id, p]));
+    const pointsByPickId = new Map<string, any>((pointsRows ?? []).map((p: any) => [p.pick_id, p]));
 
     return (picks ?? [])
       .map((pick: any) => ({
@@ -159,7 +159,7 @@ export async function getPicksForTournament(tournamentId: string) {
         points: pointsByPickId.get(pick.id)?.points ?? 0,
         made_cut: pointsByPickId.get(pick.id)?.made_cut ?? null,
       }))
-      .sort((a, b) => b.points - a.points);
+      .sort((a: any, b: any) => b.points - a.points);
   } catch {
     return [];
   }
@@ -182,7 +182,7 @@ export async function getGolfersWithSalaries(tournamentId: string) {
   }
 }
 
-export async function getMajorLineup(userId: string, tournamentId: string) {
+export async function getMajorLineup(userId: string, tournamentId: string): Promise<any | null> {
   if (!isSupabaseConfigured) return null;
   try {
     const supabase = createClient();

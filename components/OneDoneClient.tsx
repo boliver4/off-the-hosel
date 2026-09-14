@@ -36,8 +36,11 @@ export function OneDoneClient({
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase
-        .from("one_and_done_picks")
+      // Cast to `any`: the Supabase-generated Database type doesn't infer
+      // this table's Insert type correctly through the upsert() overload
+      // (a known quirk), even though the shape below matches the schema.
+      const { error } = await (supabase
+        .from("one_and_done_picks") as any)
         .upsert(
           { user_id: userId, tournament_id: tournament.id, golfer_id: golferId },
           { onConflict: "user_id,tournament_id" }

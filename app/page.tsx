@@ -178,21 +178,40 @@ export default async function HomePage() {
           </div>
         </Link>
 
-        <Link href="/major-challenge" className="quick photo-card major-progress-card">
-          <div className="major-progress-head">
-            <div>
-              <span>MAJOR CHALLENGE</span>
-              <b>My Major Picks</b>
+        {tournament?.is_major ? (
+          <Link href="/major-challenge" className="quick photo-card major-progress-card">
+            <div className="major-progress-head">
+              <div>
+                <span>MAJOR CHALLENGE</span>
+                <b>My Major Picks</b>
+              </div>
+            </div>
+            <div className="copy major-copy">
+              <div className="copy-text">
+                <b>Major Picks</b>
+                <small>Build a lineup for the next major</small>
+              </div>
+              <span className="go">→</span>
+            </div>
+          </Link>
+        ) : (
+          <div className="quick photo-card major-progress-card major-locked" aria-disabled="true">
+            <div className="major-progress-head">
+              <div>
+                <span>MAJOR CHALLENGE</span>
+                <b>My Major Picks</b>
+              </div>
+              <span className="major-lock-icon" aria-hidden="true">🔒</span>
+            </div>
+            <div className="copy major-copy">
+              <div className="copy-text">
+                <b>Locked</b>
+                <small>Opens the week of the next major</small>
+              </div>
+              <span className="go go-locked">🔒</span>
             </div>
           </div>
-          <div className="copy major-copy">
-            <div className="copy-text">
-              <b>Major Picks</b>
-              <small>Build a lineup for the next major</small>
-            </div>
-            <span className="go">→</span>
-          </div>
-        </Link>
+        )}
 
         <Link href="/tournament-info" className="quick photo-card info">
           <div className="photo"></div>
@@ -269,6 +288,8 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
+
+      <p className="oth-footer-quote">Good golf decisions start here.</p>
     </section>
   );
 }

@@ -3992,6 +3992,35 @@ body{background:#f2f4f1}
   display:flex!important;
   flex-direction:column!important;
 }
+
+/* Locked state — shown on the home dashboard when the featured/upcoming
+   tournament isn't a major, matching the "locked" card in the mockup. */
+.major-progress-card.major-locked{
+  cursor:default!important;
+  opacity:.72;
+}
+.major-progress-card.major-locked .major-progress-head{
+  background:linear-gradient(90deg,#4b4b4b,#6a6a6a);
+}
+.major-lock-icon{
+  font-size:13px;
+  opacity:.85;
+  line-height:1;
+}
+.major-progress-card.major-locked .go-locked{
+  background:var(--muted)!important;
+  color:#fff!important;
+  font-size:13px!important;
+}
+
+.oth-footer-quote{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  font-style:italic;
+  letter-spacing:.2px;
+  margin:22px 0 6px;
+}
 .major-progress-head{
   display:flex;
   justify-content:space-between;

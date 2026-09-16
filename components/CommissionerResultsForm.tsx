@@ -55,9 +55,15 @@ export function CommissionerResultsForm({
       const data = await res.json();
       if (data.found) {
         setTally(data.tally);
-        toast(`Auto-filled from ${data.roundsFound} round${data.roundsFound === 1 ? "" : "s"} of live scoring`);
+        if (data.finishPosition) setFinishPosition(data.finishPosition);
+        if (typeof data.winnings === "number") setWinnings(String(data.winnings));
+        if (typeof data.madeCut === "boolean") setMadeCut(data.madeCut);
+        const parts = [`${data.roundsFound} round${data.roundsFound === 1 ? "" : "s"} of scoring`];
+        if (typeof data.winnings === "number") parts.push("winnings");
+        if (data.finishPosition) parts.push("finish");
+        toast(`Auto-filled from ${parts.join(", ")}`);
       } else {
-        toast("No live hole-by-hole data found for this golfer/tournament yet — enter it by hand.");
+        toast("No live data found for this golfer/tournament yet — enter it by hand.");
       }
     } catch {
       toast("Couldn't reach live scoring — enter it by hand.");
@@ -116,6 +122,17 @@ export function CommissionerResultsForm({
         </select>
       </label>
 
+      <div className="results-tally-head" style={{ marginTop: 0 }}>
+        <b>Winnings, finish &amp; hole-by-hole</b>
+        <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
+          {autoFilling ? "Checking live scoring…" : "Auto-fill from live scoring"}
+        </button>
+      </div>
+      <p style={{ color: "var(--muted)", fontSize: 10, margin: "-4px 0 0" }}>
+        Pulls winnings, finish, made-cut, and every hole result from live scoring. Everything below
+        stays editable — check it over before saving.
+      </p>
+
       <label style={{ display: "block" }}>
         <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Winnings ($)</small>
         <input
@@ -145,9 +162,6 @@ export function CommissionerResultsForm({
 
       <div className="results-tally-head">
         <b>Hole-by-hole tally</b>
-        <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
-          {autoFilling ? "Checking live scoring…" : "Auto-fill from live scoring"}
-        </button>
       </div>
       <div className="results-tally-grid">
         {TALLY_FIELDS.map((f) => (

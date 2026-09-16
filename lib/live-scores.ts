@@ -22,6 +22,8 @@ export type LiveLeaderboardEntry = {
   thru: string | null;
   teeTime: string | null;
   status: string | null; // e.g. "CUT", "WD", "F" (finished)
+  earnings: number | null;
+  madeCut: boolean | null; // null = unknown/not yet determined (tournament in progress)
 };
 
 export type LiveScorecardHole = {
@@ -106,10 +108,19 @@ export async function getEspnLeaderboard(espnEventId: string): Promise<LiveLeade
       .map((c: any): LiveLeaderboardEntry | null => {
         const name = c.athlete?.displayName ?? c.displayName ?? c.athlete?.fullName ?? null;
         if (!name) return null;
+        const position: string | null = c.position?.displayName ?? c.status?.position?.displayName ?? null;
+        const statusName: string = (c.status?.type?.name ?? "").toUpperCase();
+        const statusDesc: string = (c.status?.type?.description ?? c.status?.detail ?? "").toUpperCase();
+        const isFinished = statusName === "STATUS_FINISH" || statusName === "STATUS_CUT" || statusDesc.includes("FINISH") || statusDesc.includes("CUT");
+        const isCut =
+          (position ?? "").toUpperCase() === "CUT" ||
+          statusName.includes("CUT") ||
+          statusDesc.includes("CUT") ||
+          statusDesc.includes("MISSED");
         return {
           espnId: String(c.id ?? c.athlete?.id ?? ""),
           name,
-          position: c.position?.displayName ?? c.status?.position?.displayName ?? null,
+          position,
           score:
             (typeof c.score === "string" ? c.score : c.score?.displayValue) ??
             c.status?.score ??
@@ -117,6 +128,8 @@ export async function getEspnLeaderboard(espnEventId: string): Promise<LiveLeade
           thru: c.status?.thru ?? (typeof c.status?.detail === "string" ? c.status.detail : null),
           teeTime: c.status?.teeTime ?? null,
           status: c.status?.type?.description ?? c.status?.detail ?? null,
+          earnings: typeof c.earnings === "number" ? c.earnings : null,
+          madeCut: isCut ? false : isFinished ? true : null,
         };
       })
       .filter((e): e is LiveLeaderboardEntry => !!e);

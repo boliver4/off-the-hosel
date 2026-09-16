@@ -11,20 +11,31 @@ import { EMPTY_HOLE_TALLY } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
 
+const EMPTY_RESULT = {
+  found: false,
+  tally: EMPTY_HOLE_TALLY,
+  roundsFound: 0,
+  finishPosition: null as string | null,
+  winnings: null as number | null,
+  madeCut: null as boolean | null,
+};
+
 /**
  * GET /api/hole-tally?tournamentId=...&golferId=...
  *
  * Auto-fills a commissioner's result entry: pars/birdies/eagles/bogeys/etc.
- * tallied from live hole-by-hole data, so they don't have to count holes by
- * hand. Always best-effort — returns all-zero tallies (never an error) when
- * ESPN's data isn't available, since the commissioner can just type numbers
- * in by hand in that case.
+ * tallied from live hole-by-hole data, plus finish position, winnings, and
+ * made-cut status pulled straight from the same live leaderboard — so the
+ * commissioner doesn't have to count holes or look up prize money by hand.
+ * Always best-effort — returns empty/null fields (never an error) when
+ * ESPN's data isn't available, since the commissioner can just type
+ * everything in by hand in that case.
  */
 export async function GET(req: NextRequest) {
   const tournamentId = req.nextUrl.searchParams.get("tournamentId");
   const golferId = req.nextUrl.searchParams.get("golferId");
   if (!tournamentId || !golferId || !isSupabaseConfigured) {
-    return NextResponse.json({ found: false, tally: EMPTY_HOLE_TALLY, roundsFound: 0 });
+    return NextResponse.json(EMPTY_RESULT);
   }
 
   try {
@@ -34,25 +45,32 @@ export async function GET(req: NextRequest) {
       supabase.from("golfers").select("*").eq("id", golferId).maybeSingle(),
     ]);
     if (!tournament || !golfer) {
-      return NextResponse.json({ found: false, tally: EMPTY_HOLE_TALLY, roundsFound: 0 });
+      return NextResponse.json(EMPTY_RESULT);
     }
 
     const espnEventId = await findEspnEventId(tournament as any);
     if (!espnEventId) {
-      return NextResponse.json({ found: false, tally: EMPTY_HOLE_TALLY, roundsFound: 0 });
+      return NextResponse.json(EMPTY_RESULT);
     }
 
     const liveEntries = await getEspnLeaderboard(espnEventId);
     const match = matchGolferToLive((golfer as any).name, liveEntries);
     if (!match) {
-      return NextResponse.json({ found: false, tally: EMPTY_HOLE_TALLY, roundsFound: 0 });
+      return NextResponse.json(EMPTY_RESULT);
     }
 
     const rounds = await getEspnScorecard(espnEventId, match.espnId);
     const tally = tallyHoleStats(rounds);
 
-    return NextResponse.json({ found: rounds.length > 0, tally, roundsFound: rounds.length });
+    return NextResponse.json({
+      found: rounds.length > 0 || match.earnings !== null || match.madeCut !== null,
+      tally,
+      roundsFound: rounds.length,
+      finishPosition: match.position,
+      winnings: match.earnings,
+      madeCut: match.madeCut,
+    });
   } catch {
-    return NextResponse.json({ found: false, tally: EMPTY_HOLE_TALLY, roundsFound: 0 });
+    return NextResponse.json(EMPTY_RESULT);
   }
 }

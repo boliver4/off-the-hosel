@@ -4,7 +4,6 @@ import {
   getFeaturedTournament,
   getOneAndDoneStandings,
   getPickForTournament,
-  getPicksForTournament,
 } from "@/lib/data";
 import { formatMoney, formatPoints } from "@/lib/scoring";
 import { PickPhoto } from "@/components/PickPhoto";
@@ -15,242 +14,200 @@ export default async function HomePage() {
   const standings = await getOneAndDoneStandings();
 
   const myPick = profile && tournament ? await getPickForTournament(profile.id, tournament.id) : null;
-  const tournamentPicks = tournament ? await getPicksForTournament(tournament.id) : [];
 
   return (
-    <section id="home" className="screen active professional-home oth-home">
-      <div className="oth-top">
-        <section className="oth-hero">
-          <div className="oth-hero-copy">
-            <span>FANTASY GOLF DONE RIGHT</span>
-            <h1>Off The Hosel</h1>
-            <p>Learn the games, scoring, and season format.</p>
-            <Link href="/how-to-works">
-              <button>
-                How It Works <b>→</b>
-              </button>
-            </Link>
-          </div>
-        </section>
+    <section id="home" className="screen active dash-home">
+      {/* ===== Hero + current tournament ===== */}
+      <div className="dash-hero">
+        <div className="dash-hero-copy">
+          <h1>Every Pick Matters.</h1>
+          <p>Follow the tour. Make your picks. Climb the leaderboard.</p>
+          <Link href="/my-picks">
+            <button className="dash-cta">
+              Make Your Pick <b>→</b>
+            </button>
+          </Link>
+        </div>
 
         {tournament ? (
-          <section className="oth-next tournament-focus">
-            <div className="tournament-shade"></div>
-            <div className="tournament-top">
-              <div>
-                <span className="oth-pill">{isUpcoming(tournament) ? "Next Tournament" : "Latest Tournament"}</span>
-                <h2>{tournament.name}</h2>
-                <p className="event-dates">{formatDateRange(tournament.start_date, tournament.end_date)}</p>
-              </div>
-              {tournament.field_size ? (
-                <div className="field-badge">
-                  <span>FIELD</span>
-                  <b>{tournament.field_size}</b>
-                  <small>players</small>
+          <div className="dash-tourney-card">
+            <div className="dash-tourney-top">
+              <span className="dash-pill">{isUpcoming(tournament) ? "Current Tournament" : "Latest Tournament"}</span>
+              <span className="dash-tourney-dates">{formatDateRange(tournament.start_date, tournament.end_date)}</span>
+            </div>
+            <div className="dash-tourney-title">
+              <h2>{tournament.name}</h2>
+              {tournament.is_major ? <span className="dash-major-tag">MAJOR</span> : null}
+            </div>
+
+            <div className="dash-tourney-stats">
+              <div className="dash-stat">
+                <span aria-hidden="true">📍</span>
+                <div>
+                  <b>{tournament.course || "TBD"}</b>
+                  <small>{tournament.location || ""}</small>
                 </div>
-              ) : null}
-            </div>
-
-            <div className="tournament-details">
-              <div className="detail-card">
-                <span>LOCATION</span>
-                <b>{tournament.course || "TBD"}</b>
-                <small>{tournament.location || ""}</small>
               </div>
-              <div className="detail-card">
-                <span>PURSE</span>
-                <b>{tournament.purse ? formatMoney(tournament.purse) : "TBD"}</b>
-                <small>Total purse</small>
+              <div className="dash-stat">
+                <span aria-hidden="true">🏆</span>
+                <div>
+                  <b>{tournament.purse ? formatMoney(tournament.purse) : "TBD"}</b>
+                  <small>Purse</small>
+                </div>
               </div>
-              <div className="detail-card">
-                <span>SCORING</span>
-                <b>{tournament.winnings_scoring_pct}%</b>
-                <small>{tournament.is_major ? "Major — weighted scoring" : "of winnings → points"}</small>
+              <div className="dash-stat">
+                <span aria-hidden="true">👥</span>
+                <div>
+                  <b>{tournament.field_size || "—"}</b>
+                  <small>Players</small>
+                </div>
               </div>
             </div>
 
-            <div className="pick-deadline">
-              <div className="deadline-copy">
-                <span>PICK DEADLINE</span>
-                <b>Before first tee time</b>
-                <small>Your selection locks automatically once the tournament starts.</small>
-              </div>
-            </div>
-          </section>
+            <Link href="/tournament-info" className="dash-tourney-btn">
+              View Tournament <b>→</b>
+            </Link>
+          </div>
         ) : (
-          <section className="oth-next tournament-focus">
-            <div className="tournament-top">
-              <div>
-                <span className="oth-pill">No tournament yet</span>
-                <h2>Waiting on the schedule</h2>
-                <p className="event-dates">A commissioner needs to add tournaments in Supabase.</p>
-              </div>
+          <div className="dash-tourney-card">
+            <div className="dash-tourney-top">
+              <span className="dash-pill">No tournament yet</span>
             </div>
-          </section>
+            <div className="dash-tourney-title">
+              <h2>Waiting on the schedule</h2>
+            </div>
+            <p style={{ fontSize: 12, opacity: 0.85 }}>A commissioner needs to add tournaments in Supabase.</p>
+          </div>
         )}
       </div>
 
-      <div className="oth-games">
-        <Link href="/one-done" className="oth-game oth-one">
-          <div>
-            <span>SEASON-LONG GAME</span>
-            <h3>One &amp; Done</h3>
-            <p>
-              ✓ One golfer per week.
-              <br />✓ Can&rsquo;t use them again.
-              <br />✓ Season-long competition.
-            </p>
-            <em>Make Picks &nbsp;→</em>
+      {/* ===== Quick links ===== */}
+      <div className="dash-quicklinks">
+        <Link href="/my-picks" className="dash-qcard dash-qcard-picks">
+          <div className="dash-qcard-top">
+            <span className="dash-qcard-icon" aria-hidden="true">⛳</span>
           </div>
-        </Link>
-
-        <Link href="/major-challenge" className="oth-game oth-major">
-          <div>
-            <span>MAJOR CHAMPIONSHIPS</span>
-            <h3>Major Challenge</h3>
-            <p>
-              ✓ $50,000 salary cap.
-              <br />✓ Build a 5-golfer lineup.
-              <br />✓ Only for the majors.
-            </p>
-            <em>Make Picks &nbsp;→</em>
-          </div>
-        </Link>
-      </div>
-
-      <div className="quickgrid photo-links dynamic-links">
-        <Link href="/leaderboard" className="quick tournament-leader-card">
-          <div className="tlc-head">
+          <div className="dash-qcard-bottom">
             <div>
-              <span className="tlc-kicker">CURRENT TOURNAMENT</span>
+              <b>My Picks</b>
+              <small>View or make your picks for this week.</small>
+            </div>
+            <span className="dash-qcard-arrow">→</span>
+          </div>
+        </Link>
+
+        <Link href="/leaderboard" className="dash-qcard dash-qcard-board">
+          <div className="dash-qcard-top">
+            <span className="dash-qcard-icon" aria-hidden="true">🏆</span>
+          </div>
+          <div className="dash-qcard-bottom">
+            <div>
               <b>Leaderboard</b>
+              <small>See how you stack up against the field.</small>
             </div>
-            <span className="tlc-link">Full Board →</span>
-          </div>
-          <div className="tlc-columns">
-            <span>POS</span>
-            <span>PLAYER</span>
-            <span>PICKED BY</span>
-            <span>PTS</span>
-          </div>
-          <div className="tlc-list">
-            {tournamentPicks.length === 0 ? (
-              <div className="tlc-row">
-                <span style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>No picks recorded yet this week.</span>
-              </div>
-            ) : (
-              tournamentPicks.slice(0, 5).map((p: any, i: number) => (
-                <div className="tlc-row" key={p.pick_id}>
-                  <span className="tlc-pos">{i + 1}</span>
-                  <span className="tlc-player">
-                    <b>{(p as any).golfers?.name}</b>
-                  </span>
-                  <span className="tlc-picked-by">{(p as any).profiles?.display_name}</span>
-                  <span className="tlc-pts">{formatPoints(p.points)}</span>
-                </div>
-              ))
-            )}
+            <span className="dash-qcard-arrow">→</span>
           </div>
         </Link>
 
-        <Link href="/my-picks" className="quick photo-card my-pick-card approved-pick-card">
-          <div className="approved-pick-main">
-            <div className="approved-pick-photo">
-              <span className="approved-pick-badge">{myPick ? "CURRENT PICK" : "NO PICK"}</span>
-              {myPick ? (
-                <PickPhoto name={(myPick as any)?.golfers?.name ?? ""} photoUrl={(myPick as any)?.golfers?.headshot_url} />
-              ) : null}
-            </div>
-            <div className="approved-pick-details">
-              <div className="approved-pick-tournament">{tournament?.name || "—"}</div>
-              <div className="approved-pick-name">{(myPick as any)?.golfers?.name || "No Pick Selected"}</div>
-              <div className="approved-pick-rank">
-                {myPick ? "Locked in for this week" : "Choose your One & Done golfer"}
-              </div>
-            </div>
+        <Link href="/tournament-info" className="dash-qcard dash-qcard-tourney">
+          <div className="dash-qcard-top">
+            <span className="dash-qcard-icon" aria-hidden="true">📅</span>
           </div>
-          <div className="approved-pick-footer">
-            <div className="approved-pick-footer-copy">
-              <b>My Pick</b>
-              <small>View and manage your pick.</small>
+          <div className="dash-qcard-bottom">
+            <div>
+              <b>Tournaments</b>
+              <small>Full schedule, purses and course info.</small>
             </div>
-            <span className="approved-pick-arrow">→</span>
+            <span className="dash-qcard-arrow">→</span>
           </div>
         </Link>
 
-        {tournament?.is_major ? (
-          <Link href="/major-challenge" className="quick photo-card major-progress-card">
-            <div className="major-progress-head">
-              <div>
-                <span>MAJOR CHALLENGE</span>
-                <b>My Major Picks</b>
-              </div>
-            </div>
-            <div className="copy major-copy">
-              <div className="copy-text">
-                <b>Major Picks</b>
-                <small>Build a lineup for the next major</small>
-              </div>
-              <span className="go">→</span>
-            </div>
-          </Link>
-        ) : (
-          <div className="quick photo-card major-progress-card major-locked" aria-disabled="true">
-            <div className="major-progress-head">
-              <div>
-                <span>MAJOR CHALLENGE</span>
-                <b>My Major Picks</b>
-              </div>
-              <span className="major-lock-icon" aria-hidden="true">🔒</span>
-            </div>
-            <div className="copy major-copy">
-              <div className="copy-text">
-                <b>Locked</b>
-                <small>Opens the week of the next major</small>
-              </div>
-              <span className="go go-locked">🔒</span>
-            </div>
+        <Link href="/standings" className="dash-qcard dash-qcard-standings">
+          <div className="dash-qcard-top">
+            <span className="dash-qcard-icon" aria-hidden="true">📊</span>
           </div>
-        )}
-
-        <Link href="/tournament-info" className="quick photo-card info">
-          <div className="photo"></div>
-          <div className="copy">
-            <div className="copy-text">
-              <b>Tournament Info</b>
-              <small>Field, purse, location and scoring.</small>
+          <div className="dash-qcard-bottom">
+            <div>
+              <b>Standings</b>
+              <small>Season standings and segment results.</small>
             </div>
-            <span className="go">→</span>
+            <span className="dash-qcard-arrow">→</span>
           </div>
         </Link>
       </div>
 
-      <div className="standings-duo">
-        <section className="standings-card">
-          <div className="standings-head">
-            <div>
-              <span className="standings-kicker">ONE &amp; DONE</span>
-              <h3>Season Standings</h3>
+      {/* ===== My pick + standings ===== */}
+      <div className="dash-lower">
+        <div className="dash-lower-left">
+          <section className="dash-card">
+            <div className="dash-card-head">
+              <b>My Pick This Week</b>
+              <Link href="/my-picks">Manage Picks →</Link>
             </div>
+            {myPick ? (
+              <Link href="/my-picks" className="dash-mypick-row">
+                <span className="dash-mypick-photo">
+                  <PickPhoto name={(myPick as any)?.golfers?.name ?? ""} photoUrl={(myPick as any)?.golfers?.headshot_url} />
+                </span>
+                <span className="dash-mypick-info">
+                  <b>{(myPick as any)?.golfers?.name}</b>
+                  <small>{tournament?.name}</small>
+                  <small>{tournament?.course}</small>
+                </span>
+                <span className="dash-mypick-badge">✓ PICKED</span>
+                <span className="dash-mypick-arrow">→</span>
+              </Link>
+            ) : (
+              <Link href="/my-picks" className="dash-mypick-row dash-mypick-empty">
+                <span className="dash-mypick-info">
+                  <b>No pick yet</b>
+                  <small>Choose your One &amp; Done golfer for this week</small>
+                </span>
+                <span className="dash-mypick-arrow">→</span>
+              </Link>
+            )}
+          </section>
+
+          {tournament?.is_major ? (
+            <Link href="/major-challenge" className="dash-card dash-major-card dash-major-open">
+              <span className="dash-major-icon" aria-hidden="true">🏆</span>
+              <span className="dash-major-copy">
+                <b>Major Challenge</b>
+                <small>Build your 5-golfer lineup for this major</small>
+              </span>
+              <span className="dash-major-arrow">→</span>
+            </Link>
+          ) : (
+            <div className="dash-card dash-major-card dash-major-locked" aria-disabled="true">
+              <span className="dash-major-icon" aria-hidden="true">🏆</span>
+              <span className="dash-major-copy">
+                <b>Major Challenge</b>
+                <small>Available during major championships only.</small>
+              </span>
+              <span className="dash-major-lock" aria-hidden="true">🔒</span>
+            </div>
+          )}
+        </div>
+
+        <section className="dash-card dash-standings">
+          <div className="dash-card-head">
+            <b>Season Standings</b>
+            <Link href="/standings">View Full Standings →</Link>
           </div>
-          <div className="standings-subhead">
-            <span>Overall Season</span>
-            <Link href="/standings">View Full Standings</Link>
-          </div>
-          <div className="standings-table">
-            <div className="srow shead">
-              <span>RANK</span>
-              <span>PLAYER</span>
-              <span>PTS</span>
-              <span>WEEKS</span>
+          <div className="dash-standings-table">
+            <div className="dash-srow dash-shead">
+              <span>#</span>
+              <span>Player</span>
+              <span>Points</span>
+              <span>Weeks</span>
             </div>
             {standings.length === 0 ? (
-              <div className="srow">
+              <div className="dash-srow">
                 <span style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>No standings yet.</span>
               </div>
             ) : (
               standings.slice(0, 5).map((s, i) => (
-                <div className="srow" key={s.user_id}>
+                <div className={"dash-srow" + (profile && s.user_id === profile.id ? " dash-srow-me" : "")} key={s.user_id}>
                   <span>{i + 1}</span>
                   <span>{s.display_name}</span>
                   <span>{formatPoints(s.total_points)}</span>
@@ -260,36 +217,11 @@ export default async function HomePage() {
             )}
           </div>
         </section>
-
-        <section className="standings-card">
-          <div className="standings-head">
-            <div>
-              <span className="standings-kicker">MAJOR CHALLENGE</span>
-              <h3>Major Picks Standings</h3>
-            </div>
-            <div className="major-badge">MAJORS</div>
-          </div>
-          <div className="standings-subhead">
-            <span>Current Major</span>
-            <Link href="/major-challenge">View Major Challenge</Link>
-          </div>
-          <div className="standings-table">
-            <div className="srow shead">
-              <span>RANK</span>
-              <span>PLAYER</span>
-              <span>PTS</span>
-              <span>GOLFERS</span>
-            </div>
-            <div className="srow">
-              <span style={{ gridColumn: "1 / -1", color: "var(--muted)" }}>
-                Standings appear once lineups are submitted for a major.
-              </span>
-            </div>
-          </div>
-        </section>
       </div>
 
-      <p className="oth-footer-quote">Good golf decisions start here.</p>
+      <p className="dash-footer-quote">
+        “Good golf decisions start here.” <span className="dash-footer-mark">Off The Hosel</span>
+      </p>
     </section>
   );
 }

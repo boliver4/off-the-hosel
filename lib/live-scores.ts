@@ -12,6 +12,7 @@
 
 const ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard";
 const ESPN_LEADERBOARD = "https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard";
+const ESPN_PLAYER_SUMMARY = "https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard";
 
 export type LiveLeaderboardEntry = {
   espnId: string;
@@ -131,23 +132,25 @@ export async function getEspnScorecard(
 ): Promise<LiveScorecardRound[]> {
   try {
     const res = await fetch(
-      `${ESPN_LEADERBOARD}/${espnEventId}/playersummary?player=${espnAthleteId}`,
+      `${ESPN_PLAYER_SUMMARY}/${espnEventId}/playersummary?player=${espnAthleteId}`,
       { cache: "no-store" }
     );
     if (!res.ok) return [];
     const data = await res.json();
 
-    const rounds: any[] =
-      data?.playerSummary?.rounds ?? data?.rounds ?? data?.athlete?.rounds ?? [];
+    // Shape confirmed against ESPN's actual response: { rounds: [ { period,
+    // value (round total), linescores: [ { period (hole number within the
+    // round — not a global index), value (strokes), par } ] } ], ... }
+    const rounds: any[] = data?.rounds ?? data?.playerSummary?.rounds ?? [];
 
     return rounds
-      .map((r: any, i: number): LiveScorecardRound => {
-        const holes: any[] = r.holes ?? r.linescores ?? [];
+      .map((r: any, ri: number): LiveScorecardRound => {
+        const holes: any[] = r.linescores ?? r.holes ?? [];
         return {
-          round: r.period ?? r.round ?? i + 1,
-          total: r.score ?? r.total ?? null,
+          round: r.period ?? r.round ?? ri + 1,
+          total: r.value ?? r.score ?? r.total ?? null,
           holes: holes.map((h: any, hi: number) => ({
-            hole: h.hole ?? h.period ?? hi + 1,
+            hole: h.period ?? h.hole ?? hi + 1,
             par: h.par ?? null,
             score: h.value ?? h.score ?? null,
           })),

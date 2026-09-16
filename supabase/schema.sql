@@ -3,15 +3,18 @@
 -- (Database -> SQL Editor -> New query -> paste -> Run).
 --
 -- Design notes:
---  * Scoring rule: a pick's fantasy points = golfer's tournament winnings ($)
---    times tournaments.winnings_scoring_pct / 100, floored at 0 if the golfer
---    missed the cut (or simply won $0). The percentage is set per-tournament
---    so majors can be weighted higher than regular events. See the
---    `pick_points` view / `fantasy_points()` function below — this is the
---    single source of truth for the calculation, used by every screen.
---  * Results are entered manually by a commissioner/admin — there is no
---    live stats integration. tournament_results is the row a commissioner
---    fills in per golfer per tournament after the event wraps.
+--  * Scoring rule: a pick's fantasy points combine hole-by-hole bonuses
+--    (pars/birdies/eagles/bogeys/etc., each worth a commissioner-set number
+--    of points), a bogey-free-round bonus, a share of the golfer's tournament
+--    winnings ($) at tournaments.winnings_scoring_pct%, and a missed-cut
+--    penalty — see `public.scoring_settings` for the editable point values
+--    and on/off toggles, and the `tournament_result_points` view below for
+--    the single source-of-truth calculation used by every screen.
+--  * Results (including hole tallies) are entered by a commissioner/admin.
+--    The hole tallies are usually auto-filled from live scoring data (see
+--    lib/live-scores.ts) but the commissioner can always correct them —
+--    tournament_results is the row a commissioner fills in/reviews per
+--    golfer per tournament after the event wraps.
 --  * tournament_results is keyed by tournament_id (which itself carries a
 --    `course` column), so course-level historical analytics per golfer are
 --    possible later without a schema change.
@@ -31,6 +34,7 @@ drop table if exists public.major_lineup_golfers cascade;
 drop table if exists public.major_lineups cascade;
 drop table if exists public.one_and_done_picks cascade;
 drop table if exists public.tournament_results cascade;
+drop table if exists public.scoring_settings cascade;
 drop table if exists public.tournament_field cascade;
 drop table if exists public.golfer_salaries cascade;
 drop table if exists public.tournaments cascade;
@@ -146,7 +150,43 @@ create table if not exists public.golfer_salaries (
 );
 
 -- ---------------------------------------------------------------------------
--- tournament_results (entered manually by the commissioner)
+-- scoring_settings — a single editable row of point values + on/off toggles
+-- for the hole-by-hole scoring rules. Commissioner-editable in Commissioner
+-- Tools; every rule can be turned off without deleting its point value, so
+-- flipping it back on later restores the number that was there before.
+-- ---------------------------------------------------------------------------
+create table if not exists public.scoring_settings (
+  id integer primary key default 1,
+  par_enabled boolean not null default true,
+  par_pts numeric not null default 1,
+  birdie_enabled boolean not null default true,
+  birdie_pts numeric not null default 2,
+  eagle_enabled boolean not null default true,
+  eagle_pts numeric not null default 3,
+  better_eagle_enabled boolean not null default true,
+  better_eagle_pts numeric not null default 5,
+  bogey_enabled boolean not null default true,
+  bogey_pts numeric not null default -2,
+  double_bogey_enabled boolean not null default true,
+  double_bogey_pts numeric not null default -3,
+  worse_double_enabled boolean not null default true,
+  worse_double_pts numeric not null default -5,
+  bogey_free_enabled boolean not null default true,
+  bogey_free_pts numeric not null default 1000,
+  winnings_pct_enabled boolean not null default true,
+  missed_cut_enabled boolean not null default true,
+  missed_cut_pts numeric not null default -5000,
+  updated_at timestamptz not null default now(),
+  constraint scoring_settings_singleton check (id = 1)
+);
+
+insert into public.scoring_settings (id) values (1)
+  on conflict (id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- tournament_results (entered manually by the commissioner — pars/birdies/
+-- etc. are auto-filled from live hole-by-hole data when available, but the
+-- commissioner can always correct any number before saving)
 -- ---------------------------------------------------------------------------
 create table if not exists public.tournament_results (
   tournament_id uuid not null references public.tournaments (id) on delete cascade,
@@ -154,6 +194,14 @@ create table if not exists public.tournament_results (
   winnings numeric(12, 2) not null default 0,
   made_cut boolean not null default true,
   finish_position text, -- text to allow "T4", "CUT", "WD" etc.
+  pars integer not null default 0,
+  birdies integer not null default 0,
+  eagles integer not null default 0,
+  better_than_eagle integer not null default 0,
+  bogeys integer not null default 0,
+  double_bogeys integer not null default 0,
+  worse_than_double integer not null default 0,
+  bogey_free_rounds integer not null default 0,
   entered_by uuid references public.profiles (id),
   entered_at timestamptz not null default now(),
   primary key (tournament_id, golfer_id)
@@ -161,12 +209,21 @@ create table if not exists public.tournament_results (
 
 -- ---------------------------------------------------------------------------
 -- Fantasy points calculation — single source of truth
+--
+--   points = (pars × par pts) + (birdies × birdie pts) + (eagles × eagle
+--   pts) + (better-than-eagle × their pts) + (bogeys × bogey pts) +
+--   (double bogeys × double bogey pts) + (worse-than-double × their pts) +
+--   (bogey-free rounds × bogey-free bonus) + (winnings × tournament's
+--   winnings %) + (missed-cut penalty, if they missed the cut) — every term
+--   is zeroed out if that rule is toggled off in scoring_settings.
 -- ---------------------------------------------------------------------------
 create or replace function public.fantasy_points(p_winnings numeric, p_made_cut boolean, p_pct numeric)
 returns numeric
 language sql
 immutable
 as $$
+  -- Kept for backward compatibility (winnings-% only preview); the real
+  -- scoring below (tournament_result_points) is the source of truth.
   select case
     when p_made_cut is false then 0
     else round(greatest(p_winnings, 0) * (p_pct / 100.0), 2)
@@ -181,10 +238,30 @@ select
   tr.winnings,
   tr.made_cut,
   tr.finish_position,
+  tr.pars,
+  tr.birdies,
+  tr.eagles,
+  tr.better_than_eagle,
+  tr.bogeys,
+  tr.double_bogeys,
+  tr.worse_than_double,
+  tr.bogey_free_rounds,
   t.winnings_scoring_pct,
-  public.fantasy_points(tr.winnings, tr.made_cut, t.winnings_scoring_pct) as points
+  (
+    coalesce(tr.pars, 0) * (case when coalesce(s.par_enabled, true) then coalesce(s.par_pts, 1) else 0 end)
+    + coalesce(tr.birdies, 0) * (case when coalesce(s.birdie_enabled, true) then coalesce(s.birdie_pts, 2) else 0 end)
+    + coalesce(tr.eagles, 0) * (case when coalesce(s.eagle_enabled, true) then coalesce(s.eagle_pts, 3) else 0 end)
+    + coalesce(tr.better_than_eagle, 0) * (case when coalesce(s.better_eagle_enabled, true) then coalesce(s.better_eagle_pts, 5) else 0 end)
+    + coalesce(tr.bogeys, 0) * (case when coalesce(s.bogey_enabled, true) then coalesce(s.bogey_pts, -2) else 0 end)
+    + coalesce(tr.double_bogeys, 0) * (case when coalesce(s.double_bogey_enabled, true) then coalesce(s.double_bogey_pts, -3) else 0 end)
+    + coalesce(tr.worse_than_double, 0) * (case when coalesce(s.worse_double_enabled, true) then coalesce(s.worse_double_pts, -5) else 0 end)
+    + coalesce(tr.bogey_free_rounds, 0) * (case when coalesce(s.bogey_free_enabled, true) then coalesce(s.bogey_free_pts, 1000) else 0 end)
+    + (case when coalesce(s.winnings_pct_enabled, true) then round(greatest(tr.winnings, 0) * (t.winnings_scoring_pct / 100.0), 2) else 0 end)
+    + (case when tr.made_cut is false and coalesce(s.missed_cut_enabled, true) then coalesce(s.missed_cut_pts, -5000) else 0 end)
+  ) as points
 from public.tournament_results tr
-join public.tournaments t on t.id = tr.tournament_id;
+join public.tournaments t on t.id = tr.tournament_id
+left join public.scoring_settings s on s.id = 1;
 
 -- ---------------------------------------------------------------------------
 -- one_and_done_picks
@@ -311,6 +388,7 @@ alter table public.tournaments enable row level security;
 alter table public.golfer_salaries enable row level security;
 alter table public.tournament_field enable row level security;
 alter table public.tournament_results enable row level security;
+alter table public.scoring_settings enable row level security;
 alter table public.one_and_done_picks enable row level security;
 alter table public.major_lineups enable row level security;
 alter table public.major_lineup_golfers enable row level security;
@@ -441,6 +519,21 @@ create policy "admins manage results"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- scoring_settings: readable by everyone (points shown on the public
+-- leaderboard depend on it); editable only by admins.
+drop policy if exists "scoring settings are readable by everyone" on public.scoring_settings;
+create policy "scoring settings are readable by everyone"
+  on public.scoring_settings for select
+  to public
+  using (true);
+
+drop policy if exists "admins manage scoring settings" on public.scoring_settings;
+create policy "admins manage scoring settings"
+  on public.scoring_settings for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
 -- one_and_done_picks: readable by everyone, including logged-out visitors
 -- (the public leaderboard shows who picked whom); a user may only
 -- insert/update/delete their OWN picks.
@@ -515,6 +608,7 @@ grant select on
   public.golfer_salaries,
   public.tournament_field,
   public.tournament_results,
+  public.scoring_settings,
   public.one_and_done_picks,
   public.major_lineups,
   public.major_lineup_golfers
@@ -537,6 +631,7 @@ grant insert, update, delete on
   public.golfer_salaries,
   public.tournament_field,
   public.tournament_results,
+  public.scoring_settings,
   public.one_and_done_picks,
   public.major_lineups,
   public.major_lineup_golfers

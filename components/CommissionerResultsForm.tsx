@@ -4,21 +4,67 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
-import { fantasyPoints } from "@/lib/scoring";
+import { fantasyPointsFull, EMPTY_HOLE_TALLY, type HoleTally, type ScoringSettings } from "@/lib/scoring";
 import type { Golfer, Tournament } from "@/lib/data";
 
-export function CommissionerResultsForm({ tournaments, golfers }: { tournaments: Tournament[]; golfers: Golfer[] }) {
+const TALLY_FIELDS: { key: keyof HoleTally; label: string }[] = [
+  { key: "pars", label: "Pars" },
+  { key: "birdies", label: "Birdies" },
+  { key: "eagles", label: "Eagles" },
+  { key: "better_than_eagle", label: "Better than eagle" },
+  { key: "bogeys", label: "Bogeys" },
+  { key: "double_bogeys", label: "Double bogeys" },
+  { key: "worse_than_double", label: "Worse than double" },
+  { key: "bogey_free_rounds", label: "Bogey-free rounds" },
+];
+
+export function CommissionerResultsForm({
+  tournaments,
+  golfers,
+  scoringSettings,
+}: {
+  tournaments: Tournament[];
+  golfers: Golfer[];
+  scoringSettings: ScoringSettings;
+}) {
   const [tournamentId, setTournamentId] = useState(tournaments[0]?.id ?? "");
   const [golferId, setGolferId] = useState(golfers[0]?.id ?? "");
   const [winnings, setWinnings] = useState("0");
   const [madeCut, setMadeCut] = useState(true);
   const [finishPosition, setFinishPosition] = useState("");
+  const [tally, setTally] = useState<HoleTally>(EMPTY_HOLE_TALLY);
   const [saving, setSaving] = useState(false);
+  const [autoFilling, setAutoFilling] = useState(false);
   const router = useRouter();
   const toast = useToast();
 
   const tournament = tournaments.find((t) => t.id === tournamentId);
-  const preview = tournament ? fantasyPoints(Number(winnings) || 0, madeCut, tournament.winnings_scoring_pct) : 0;
+  const preview = tournament
+    ? fantasyPointsFull(tally, Number(winnings) || 0, madeCut, tournament.winnings_scoring_pct, scoringSettings)
+    : 0;
+
+  function setTallyField(key: keyof HoleTally, value: string) {
+    setTally((t) => ({ ...t, [key]: value === "" ? 0 : Number(value) }));
+  }
+
+  async function autoFill() {
+    if (!tournamentId || !golferId) return;
+    setAutoFilling(true);
+    try {
+      const res = await fetch(`/api/hole-tally?tournamentId=${tournamentId}&golferId=${golferId}`);
+      const data = await res.json();
+      if (data.found) {
+        setTally(data.tally);
+        toast(`Auto-filled from ${data.roundsFound} round${data.roundsFound === 1 ? "" : "s"} of live scoring`);
+      } else {
+        toast("No live hole-by-hole data found for this golfer/tournament yet — enter it by hand.");
+      }
+    } catch {
+      toast("Couldn't reach live scoring — enter it by hand.");
+    } finally {
+      setAutoFilling(false);
+    }
+  }
 
   async function save() {
     if (!tournamentId || !golferId) return;
@@ -32,6 +78,7 @@ export function CommissionerResultsForm({ tournaments, golfers }: { tournaments:
           winnings: Number(winnings) || 0,
           made_cut: madeCut,
           finish_position: finishPosition || null,
+          ...tally,
         },
         { onConflict: "tournament_id,golfer_id" }
       );
@@ -96,10 +143,32 @@ export function CommissionerResultsForm({ tournaments, golfers }: { tournaments:
         Made the cut
       </label>
 
+      <div className="results-tally-head">
+        <b>Hole-by-hole tally</b>
+        <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
+          {autoFilling ? "Checking live scoring…" : "Auto-fill from live scoring"}
+        </button>
+      </div>
+      <div className="results-tally-grid">
+        {TALLY_FIELDS.map((f) => (
+          <label key={f.key} className="results-tally-field">
+            <small>{f.label}</small>
+            <input
+              className="loginfield"
+              type="number"
+              min={0}
+              step={1}
+              value={tally[f.key]}
+              onChange={(e) => setTallyField(f.key, e.target.value)}
+            />
+          </label>
+        ))}
+      </div>
+
       <div className="bigrow" style={{ background: "#f5f3ee", borderRadius: 10, border: "1px solid var(--line)" }}>
         <div className="meta">
           <b>Fantasy points preview</b>
-          <small>winnings × scoring % (0 if missed cut)</small>
+          <small>Hole tally + % of winnings + missed-cut penalty, per Scoring Settings</small>
         </div>
         <b>{preview.toLocaleString()}</b>
       </div>

@@ -36,8 +36,9 @@ export default async function MorePage() {
           <div className="meta">
             <b>Scoring Rules</b>
             <small>
-              Fantasy points = winnings × tournament scoring % (0 pts on a missed cut). See How It Works
-              for details.
+              Points for pars/birdies/eagles/bogeys, a bogey-free bonus, a share of winnings, and a
+              missed-cut penalty. See How It Works for details, or Commissioner Tools to edit the
+              numbers.
             </small>
           </div>
         </div>

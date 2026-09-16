@@ -5368,3 +5368,72 @@ body{background:#f2f4f1}
   border-color:var(--g)!important;
   color:#fff!important;
 }
+
+/* Scoring Settings (Commissioner Tools) */
+.scoring-rule-row{
+  display:grid!important;
+  grid-template-columns:28px 1fr 90px!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:8px 0!important;
+  border-bottom:1px solid var(--line)!important;
+}
+.scoring-rule-row:last-of-type{ border-bottom:0!important; }
+.scoring-rule-toggle input{
+  width:18px!important;
+  height:18px!important;
+}
+.scoring-rule-label{ display:flex!important; flex-direction:column!important; }
+.scoring-rule-label b{ font-size:13px!important; }
+.scoring-rule-label small{ color:var(--muted)!important; font-size:10px!important; }
+.scoring-rule-input{ text-align:right!important; font-weight:800!important; }
+
+/* Hole tally (Commissioner Results form) */
+.results-tally-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  margin-top:6px!important;
+}
+.results-tally-head b{ font-size:13px!important; }
+.results-tally-head button{ font-size:11px!important; padding:8px 10px!important; }
+.results-tally-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+}
+.results-tally-field{ display:flex!important; flex-direction:column!important; gap:4px!important; }
+.results-tally-field small{ color:var(--muted)!important; font-size:10px!important; }
+@media(max-width:480px){
+  .results-tally-grid{ grid-template-columns:1fr 1fr!important; }
+}
+
+/* Scoring rule chips (How It Works) */
+.scoring-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2, 1fr)!important;
+  gap:8px!important;
+  margin:12px 0!important;
+}
+.scoring-chip{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  padding:9px 12px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  border:1px solid var(--line)!important;
+  background:#f6f8f6!important;
+}
+.scoring-chip b{ font-size:12px!important; font-weight:900!important; }
+.scoring-chip.good{ background:#eef8f2!important; }
+.scoring-chip.good b{ color:#1f7a4d!important; }
+.scoring-chip.bad{ background:#fbeeed!important; }
+.scoring-chip.bad b{ color:var(--red)!important; }
+.scoring-chip.neutral b{ color:var(--g)!important; }
+@media(max-width:560px){
+  .scoring-grid{ grid-template-columns:1fr 1fr!important; }
+}

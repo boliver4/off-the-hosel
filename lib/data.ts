@@ -1,5 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
+import { DEFAULT_SCORING_SETTINGS } from "@/lib/scoring";
 
 export type Golfer = Database["public"]["Tables"]["golfers"]["Row"];
 export type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
@@ -204,6 +205,19 @@ export async function getGolfersWithSalaries(tournamentId: string) {
     return data ?? [];
   } catch {
     return [];
+  }
+}
+
+/** The single editable scoring-rules row. Falls back to sane defaults if unset. */
+export async function getScoringSettings() {
+  if (!isSupabaseConfigured) return DEFAULT_SCORING_SETTINGS;
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.from("scoring_settings").select("*").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    return data ? { ...DEFAULT_SCORING_SETTINGS, ...data } : DEFAULT_SCORING_SETTINGS;
+  } catch {
+    return DEFAULT_SCORING_SETTINGS;
   }
 }
 

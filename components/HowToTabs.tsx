@@ -53,23 +53,59 @@ export function HowToTabs() {
             <div className="step-card scoring-step">
               <div className="step-copy">
                 <span className="howto-kicker">SCORING</span>
-                <h2>You earn a share of their winnings</h2>
+                <h2>Points for every hole, plus a share of winnings</h2>
                 <p>
-                  Your golfer&rsquo;s fantasy points are a percentage of what they actually win ($) that
-                  week. Your commissioner sets the percentage for each event.
+                  Your golfer earns or loses points hole by hole, plus a share of what they actually
+                  win ($) that week. Your commissioner sets these numbers in Scoring Settings — the
+                  defaults are shown below.
                 </p>
+              </div>
+
+              <div className="scoring-grid">
+                <div className="scoring-chip good">
+                  <span>Birdie</span>
+                  <b>+2</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Eagle</span>
+                  <b>+3</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Better than eagle</span>
+                  <b>+5</b>
+                </div>
+                <div className="scoring-chip neutral">
+                  <span>Par</span>
+                  <b>+1</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Bogey</span>
+                  <b>-2</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Double bogey</span>
+                  <b>-3</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Worse than double</span>
+                  <b>-5</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Bogey-free round</span>
+                  <b>+1000</b>
+                </div>
               </div>
 
               <div className="bonus-row">
                 <div className="bonus-card">
-                  <span>Regular tour event</span>
-                  <b>~1%</b>
-                  <small>$1,000,000 won ≈ 10,000 fantasy points</small>
+                  <span>% of money won</span>
+                  <b>set per event</b>
+                  <small>added on top of hole-by-hole points</small>
                 </div>
                 <div className="bonus-card danger">
                   <span>Missed cut</span>
-                  <b>0 pts</b>
-                  <small>No winnings, no points that week</small>
+                  <b>-5000</b>
+                  <small>Stacks with points already earned that week</small>
                 </div>
               </div>
             </div>
@@ -121,23 +157,58 @@ export function HowToTabs() {
             <div className="step-card scoring-step">
               <div className="step-copy">
                 <span className="howto-kicker">SCORING</span>
-                <h2>Each golfer earns a share of their winnings</h2>
+                <h2>Each golfer scores hole by hole, plus winnings</h2>
                 <p>
-                  Every golfer in your lineup earns fantasy points based on a percentage of what they win
-                  ($) that week. Majors carry a higher percentage than a regular event.
+                  Every golfer in your lineup earns or loses points hole by hole, plus a share of what
+                  they win ($) that week — same rules as One &amp; Done, set in Scoring Settings.
                 </p>
+              </div>
+
+              <div className="scoring-grid">
+                <div className="scoring-chip good">
+                  <span>Birdie</span>
+                  <b>+2</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Eagle</span>
+                  <b>+3</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Better than eagle</span>
+                  <b>+5</b>
+                </div>
+                <div className="scoring-chip neutral">
+                  <span>Par</span>
+                  <b>+1</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Bogey</span>
+                  <b>-2</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Double bogey</span>
+                  <b>-3</b>
+                </div>
+                <div className="scoring-chip bad">
+                  <span>Worse than double</span>
+                  <b>-5</b>
+                </div>
+                <div className="scoring-chip good">
+                  <span>Bogey-free round</span>
+                  <b>+1000</b>
+                </div>
               </div>
 
               <div className="bonus-row">
                 <div className="bonus-card">
-                  <span>Major championship</span>
-                  <b>~3%</b>
-                  <small>Weighted higher — set per tournament</small>
+                  <span>% of money won</span>
+                  <b>set per event</b>
+                  <small>higher for majors — added on top of hole points</small>
                 </div>
                 <div className="bonus-card danger">
                   <span>Missed cut</span>
-                  <b>0 pts</b>
-                  <small>No winnings, no points for that golfer</small>
+                  <b>-5000</b>
+                  <small>Stacks with points already earned that week</small>
                 </div>
               </div>
             </div>

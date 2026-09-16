@@ -189,3 +189,60 @@ function similarity(a: string, b: string): number {
   for (const w of setA) if (setB.has(w)) shared++;
   return shared;
 }
+
+/**
+ * Tallies pars/birdies/eagles/bogeys/etc. (and bogey-free rounds) across
+ * every round played, from hole-by-hole scorecard data. Used to auto-fill
+ * a commissioner's result entry — always double-check-able/editable by
+ * them before saving, since this depends on ESPN's data being complete.
+ */
+export function tallyHoleStats(rounds: LiveScorecardRound[]): {
+  pars: number;
+  birdies: number;
+  eagles: number;
+  better_than_eagle: number;
+  bogeys: number;
+  double_bogeys: number;
+  worse_than_double: number;
+  bogey_free_rounds: number;
+} {
+  const tally = {
+    pars: 0,
+    birdies: 0,
+    eagles: 0,
+    better_than_eagle: 0,
+    bogeys: 0,
+    double_bogeys: 0,
+    worse_than_double: 0,
+    bogey_free_rounds: 0,
+  };
+
+  for (const round of rounds) {
+    let roundHadBogeyOrWorse = false;
+    let countedHoles = 0;
+    for (const hole of round.holes) {
+      if (hole.score === null || hole.par === null) continue;
+      countedHoles++;
+      const diff = hole.score - hole.par;
+      if (diff <= -3) tally.better_than_eagle++;
+      else if (diff === -2) tally.eagles++;
+      else if (diff === -1) tally.birdies++;
+      else if (diff === 0) tally.pars++;
+      else if (diff === 1) {
+        tally.bogeys++;
+        roundHadBogeyOrWorse = true;
+      } else if (diff === 2) {
+        tally.double_bogeys++;
+        roundHadBogeyOrWorse = true;
+      } else if (diff > 2) {
+        tally.worse_than_double++;
+        roundHadBogeyOrWorse = true;
+      }
+    }
+    // A "bogey-free round" needs a complete, finished round with no bogey
+    // or worse anywhere in it.
+    if (countedHoles >= 18 && !roundHadBogeyOrWorse) tally.bogey_free_rounds++;
+  }
+
+  return tally;
+}

@@ -5437,3 +5437,33 @@ body{background:#f2f4f1}
 @media(max-width:560px){
   .scoring-grid{ grid-template-columns:1fr 1fr!important; }
 }
+
+/* Per-tournament winnings % (Scoring Settings) */
+.tourney-pct-row{
+  display:grid!important;
+  grid-template-columns:1fr 80px 64px!important;
+  align-items:center!important;
+  gap:8px!important;
+  padding:10px 8px!important;
+  border-bottom:1px solid var(--line)!important;
+}
+.tourney-pct-row:last-child{ border-bottom:0!important; }
+.tourney-pct-name{ display:flex!important; flex-direction:column!important; min-width:0!important; }
+.tourney-pct-name b{
+  font-size:12px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.tourney-pct-name small{ color:var(--muted)!important; font-size:10px!important; }
+.tourney-pct-input{
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+}
+.tourney-pct-input input{ text-align:right!important; font-weight:800!important; }
+.tourney-pct-input span{ font-size:11px!important; color:var(--muted)!important; }
+.tourney-pct-row button{ font-size:11px!important; padding:8px 6px!important; }
+@media(max-width:480px){
+  .tourney-pct-row{ grid-template-columns:1fr 64px 52px!important; gap:6px!important; }
+}

@@ -56,7 +56,7 @@ export function ScoringSettingsForm({ initial }: { initial: ScoringSettings }) {
       toast("Scoring settings saved");
       router.refresh();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't save scoring settings");
+      toast((err as any)?.message || (err instanceof Error ? err.message : "Couldn't save scoring settings"));
     } finally {
       setSaving(false);
     }

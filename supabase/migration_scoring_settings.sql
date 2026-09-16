@@ -53,8 +53,19 @@ alter table public.tournament_results add column if not exists bogey_free_rounds
 
 -- ---------------------------------------------------------------------------
 -- tournament_result_points — replace with the new formula.
+--
+-- Postgres won't let CREATE OR REPLACE VIEW insert new columns in the
+-- middle of an existing view's column list (it reads that as a rename,
+-- not an add) — so this drops the view and everything that depends on it
+-- first, then recreates all of them fresh. Nothing here touches your
+-- actual data, only the view definitions themselves.
 -- ---------------------------------------------------------------------------
-create or replace view public.tournament_result_points as
+drop view if exists public.major_lineup_points cascade;
+drop view if exists public.one_and_done_standings cascade;
+drop view if exists public.one_and_done_pick_points cascade;
+drop view if exists public.tournament_result_points cascade;
+
+create view public.tournament_result_points as
 select
   tr.tournament_id,
   tr.golfer_id,
@@ -85,6 +96,53 @@ select
 from public.tournament_results tr
 join public.tournaments t on t.id = tr.tournament_id
 left join public.scoring_settings s on s.id = 1;
+
+-- Recreate the views that were just dropped by the cascade above, exactly
+-- as they were (unchanged from schema.sql) — they automatically pick up
+-- the new formula through tournament_result_points.points.
+create view public.one_and_done_pick_points as
+select
+  p.id as pick_id,
+  p.user_id,
+  p.tournament_id,
+  p.golfer_id,
+  p.picked_at,
+  coalesce(trp.points, 0) as points,
+  trp.made_cut,
+  trp.winnings
+from public.one_and_done_picks p
+left join public.tournament_result_points trp
+  on trp.tournament_id = p.tournament_id and trp.golfer_id = p.golfer_id;
+
+create view public.one_and_done_standings as
+select
+  pr.id as user_id,
+  pr.display_name,
+  coalesce(sum(pp.points), 0) as total_points,
+  count(pp.pick_id) as weeks_picked
+from public.profiles pr
+left join public.one_and_done_pick_points pp on pp.user_id = pr.id
+group by pr.id, pr.display_name
+order by total_points desc;
+
+create view public.major_lineup_points as
+select
+  ml.id as lineup_id,
+  ml.user_id,
+  ml.tournament_id,
+  coalesce(sum(coalesce(trp.points, 0)), 0) as total_points
+from public.major_lineups ml
+join public.major_lineup_golfers mlg on mlg.lineup_id = ml.id
+left join public.tournament_result_points trp
+  on trp.tournament_id = ml.tournament_id and trp.golfer_id = mlg.golfer_id
+group by ml.id, ml.user_id, ml.tournament_id;
+
+grant select on
+  public.tournament_result_points,
+  public.one_and_done_pick_points,
+  public.one_and_done_standings,
+  public.major_lineup_points
+to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- RLS + grants for the new table.

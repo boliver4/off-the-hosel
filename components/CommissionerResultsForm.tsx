@@ -35,8 +35,34 @@ export function CommissionerResultsForm({
   const [tally, setTally] = useState<HoleTally>(EMPTY_HOLE_TALLY);
   const [saving, setSaving] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const router = useRouter();
   const toast = useToast();
+
+  async function syncAll() {
+    if (!tournamentId) return;
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/sync-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data?.error || "Couldn't sync results");
+      } else if (data.reason === "no_live_event" || data.reason === "no_live_data") {
+        toast("No live data found for this tournament yet — try again once it tees off.");
+      } else {
+        toast(`Synced ${data.synced} of ${data.total} golfers from live scoring`);
+        router.refresh();
+      }
+    } catch {
+      toast("Couldn't reach live scoring");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const tournament = tournaments.find((t) => t.id === tournamentId);
   const preview = tournament
@@ -92,7 +118,7 @@ export function CommissionerResultsForm({
       toast("Result saved");
       router.refresh();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't save result");
+      toast((err as any)?.message || (err instanceof Error ? err.message : "Couldn't save result"));
     } finally {
       setSaving(false);
     }
@@ -111,6 +137,16 @@ export function CommissionerResultsForm({
         </select>
       </label>
 
+      <div className="sync-all-box">
+        <div>
+          <b>Sync every golfer at once</b>
+          <small>Pulls live winnings, finish, and hole-by-hole for the whole field — no need to open each golfer one by one.</small>
+        </div>
+        <button type="button" className="submit" disabled={syncing || !tournamentId} onClick={syncAll}>
+          {syncing ? "Syncing…" : "Sync All From Live Scoring"}
+        </button>
+      </div>
+
       <label style={{ display: "block" }}>
         <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Golfer</small>
         <select className="loginfield" value={golferId} onChange={(e) => setGolferId(e.target.value)}>
@@ -123,14 +159,14 @@ export function CommissionerResultsForm({
       </label>
 
       <div className="results-tally-head" style={{ marginTop: 0 }}>
-        <b>Winnings, finish &amp; hole-by-hole</b>
+        <b>Review this one golfer</b>
         <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
-          {autoFilling ? "Checking live scoring…" : "Auto-fill from live scoring"}
+          {autoFilling ? "Checking live scoring…" : "Re-fill from live scoring"}
         </button>
       </div>
       <p style={{ color: "var(--muted)", fontSize: 10, margin: "-4px 0 0" }}>
-        Pulls winnings, finish, made-cut, and every hole result from live scoring. Everything below
-        stays editable — check it over before saving.
+        Already synced above? Use this to double-check or correct one golfer&rsquo;s numbers before
+        saving — everything below is editable.
       </p>
 
       <label style={{ display: "block" }}>

@@ -32,7 +32,7 @@ export function TournamentScoringForm({ tournaments }: { tournaments: Tournament
       toast("Winnings % updated");
       router.refresh();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't save");
+      toast((err as any)?.message || (err instanceof Error ? err.message : "Couldn't save"));
     } finally {
       setSavingId(null);
     }

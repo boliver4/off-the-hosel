@@ -5467,3 +5467,22 @@ body{background:#f2f4f1}
 @media(max-width:480px){
   .tourney-pct-row{ grid-template-columns:1fr 64px 52px!important; gap:6px!important; }
 }
+
+/* Sync-all-golfers box (Commissioner Results form) */
+.sync-all-box{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:12px!important;
+  border-radius:10px!important;
+  background:#eef8f2!important;
+  border:1px solid #cfe9db!important;
+}
+.sync-all-box b{ display:block!important; font-size:13px!important; }
+.sync-all-box small{ display:block!important; color:var(--muted)!important; font-size:10px!important; margin-top:2px!important; }
+.sync-all-box button{ flex-shrink:0!important; font-size:11px!important; padding:10px 12px!important; white-space:nowrap!important; }
+@media(max-width:480px){
+  .sync-all-box{ flex-direction:column!important; align-items:stretch!important; }
+  .sync-all-box button{ width:100%!important; }
+}

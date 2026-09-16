@@ -191,6 +191,55 @@ export async function getPicksForTournament(tournamentId: string): Promise<any[]
   }
 }
 
+export type PickBoardRow = {
+  user_id: string;
+  display_name: string | null;
+  has_pick: boolean;
+  golfer_name: string | null;
+  points: number;
+  is_viewer: boolean;
+};
+
+/**
+ * Every league member's pick status for a tournament, for the Leaderboard's
+ * "This Week's Picks" list. Everyone always sees WHETHER a member has
+ * picked yet; WHO they picked only shows once the tournament has started
+ * (picks lock at the first tee time, so "started" is our deadline proxy) —
+ * except a member always sees their own pick. This mirrors the
+ * one_and_done_picks RLS policy (readable by everyone) at the query level,
+ * but hides the golfer name in the UI until the reveal condition is met.
+ */
+export async function getPickBoard(tournamentId: string, viewerId: string | null, deadlinePassed: boolean): Promise<PickBoardRow[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const supabase = createClient();
+    const { data: members, error: mErr } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .order("display_name", { ascending: true });
+    if (mErr) throw mErr;
+
+    const picks = await getPicksForTournament(tournamentId);
+    const pickByUserId = new Map<string, any>(picks.map((p: any) => [p.user_id, p]));
+
+    return (members ?? []).map((m: any) => {
+      const pick = pickByUserId.get(m.id);
+      const isViewer = viewerId != null && m.id === viewerId;
+      const reveal = deadlinePassed || isViewer;
+      return {
+        user_id: m.id,
+        display_name: m.display_name,
+        has_pick: !!pick,
+        golfer_name: pick && reveal ? pick.golfers?.name ?? null : null,
+        points: pick ? pick.points ?? 0 : 0,
+        is_viewer: isViewer,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 /** Salaries + golfer info for a Major Challenge lineup builder. */
 export async function getGolfersWithSalaries(tournamentId: string) {
   if (!isSupabaseConfigured) return [];

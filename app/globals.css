@@ -5698,3 +5698,12 @@ body{background:#f2f4f1}
   .dash-srow{grid-template-columns:20px 1fr 66px 46px;font-size:12px}
   .dash-footer-quote{justify-content:center;text-align:center}
 }
+
+/* ---- Leaderboard "This Week's Picks" board ---- */
+.pickboard-row{grid-template-columns:1fr 110px 60px!important}
+.pick-status{font-size:10px;font-weight:800}
+.pick-status-made{color:#1f7a43}
+.pick-status-none{color:var(--muted);font-weight:600}
+@media(max-width:420px){
+  .pickboard-row{grid-template-columns:1fr 96px 52px!important}
+}

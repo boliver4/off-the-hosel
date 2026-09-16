@@ -5116,9 +5116,9 @@ body{background:#f2f4f1}
 .tlc-columns,
 .tlc-row{
   display:grid!important;
-  grid-template-columns:26px minmax(0,1fr) 92px 42px!important;
+  grid-template-columns:24px minmax(0,1fr) 76px 72px!important;
   align-items:center!important;
-  gap:8px!important;
+  gap:6px!important;
   padding:10px 12px!important;
 }
 .tlc-columns{
@@ -5172,18 +5172,21 @@ body{background:#f2f4f1}
   white-space:nowrap!important;
 }
 .tlc-row .tlc-pts{
-  font-size:13px!important;
+  font-size:12px!important;
   font-weight:900!important;
   color:var(--red)!important;
   text-align:right!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
 }
 @media(max-width:560px){
   .tlc-columns,
   .tlc-row{
-    grid-template-columns:20px minmax(0,1fr) 64px 34px!important;
-    gap:6px!important;
+    grid-template-columns:18px minmax(0,1fr) 52px 62px!important;
+    gap:5px!important;
     padding:9px 8px!important;
   }
+  .tlc-row .tlc-pts{ font-size:11px!important; }
 }
 
 /* How It Works — game tab toggle */

@@ -111,7 +111,9 @@ export function formatMoney(value: number | null | undefined): string {
 
 export function formatPoints(value: number | null | undefined): string {
   const n = value ?? 0;
-  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  // Whole numbers only — the bogey-free/missed-cut bonuses push totals into
+  // the thousands, so cents just add clutter and width nothing needs.
+  return Math.round(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 export const MAJOR_CHALLENGE_SALARY_CAP = 50000;

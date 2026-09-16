@@ -75,7 +75,17 @@ button:disabled,.submit:disabled{cursor:not-allowed}
 .cardhead{padding:9px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center} .cardhead h3{margin:0;font-size:12px} .cardhead button{border:0;background:transparent;color:var(--g2);font-size:8px;font-weight:800}
 .prow{display:flex;align-items:center;gap:8px;padding:8px 9px;border-top:1px solid var(--line)} .prow:first-child{border-top:0} .prow img{width:34px;height:34px;border-radius:8px;object-fit:cover} .meta{flex:1} .meta b{display:block;font-size:9px} .meta small{font-size:8px;color:var(--muted)} .plus{width:24px;height:24px;border:0;border-radius:50%;background:var(--g2);color:#fff;font-size:17px}
 .news{padding:8px;border-top:1px solid var(--line);display:flex;gap:8px} .news:first-child{border-top:0} .newsimg{width:64px;height:42px;border-radius:7px;background:url('/images/course/course-26.jpg') center/cover;flex:0 0 auto} .news b{font-size:8.5px;display:block} .news small{font-size:7.5px;color:var(--muted)}
-.pagehead{display:flex;align-items:center;gap:9px;margin-bottom:10px} .pagehead h1{font-size:20px;margin:0} .back{border:1px solid var(--line);background:#fff;border-radius:9px;width:34px;height:34px;color:var(--g);font-size:20px}
+.pagehead{display:flex;align-items:center;gap:9px;margin-bottom:10px} .pagehead h1{font-size:20px;margin:0}
+/* .back (the "‹" back button on every inner page) never centered its
+   glyph — every other icon-circle in this file uses flex/grid centering,
+   this one didn't, so the arrow sat low-left in its box looking like a
+   near-empty rounded rectangle jammed against the heading. */
+.back{
+  border:1px solid var(--line);background:#fff;border-radius:9px;
+  width:34px;height:34px;flex:0 0 34px;color:var(--g);font-size:20px;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  text-decoration:none;
+}
 .tabs{display:flex;background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:10px} .tab{flex:1;border:0;background:transparent;border-radius:7px;padding:8px;font-size:9px;font-weight:800;color:#6f7b75} .tab.active{background:var(--g);color:#fff}
 .search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px} .search input{border:0;outline:0;width:100%;background:transparent}
 .bigrow{display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--line)} .bigrow:first-child{border-top:0} .bigrow img{width:44px;height:44px;border-radius:50%;object-fit:cover} .bigrow .meta b{font-size:11px} .bigrow .meta small{font-size:9px}

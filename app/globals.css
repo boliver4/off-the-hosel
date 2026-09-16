@@ -5222,3 +5222,103 @@ body{background:#f2f4f1}
 @media(max-width:560px){
   .howto-tab{ font-size:12px!important; padding:10px 6px!important; }
 }
+
+/* Live leaderboard + hole-by-hole scorecard */
+.section-label{
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:1px!important;
+  color:var(--muted)!important;
+  margin:4px 0 8px!important;
+  text-transform:uppercase!important;
+}
+.live-head{
+  grid-template-columns:34px 1fr 54px 60px 1fr!important;
+}
+.live-row{
+  display:grid!important;
+  grid-template-columns:34px 1fr 54px 60px 1fr!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:100%!important;
+  border:0!important;
+  background:transparent!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  font:inherit!important;
+  color:inherit!important;
+  padding:10px 12px!important;
+  border-bottom:1px solid #edf1ee!important;
+}
+.live-row:hover{ background:#f6f8f6!important; }
+.live-row:last-child{ border-bottom:0!important; }
+.live-player{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+.live-player b{
+  font-size:13px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.live-picked-by{
+  font-size:11px!important;
+  color:var(--muted)!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+@media(max-width:560px){
+  .live-head,
+  .live-row{
+    grid-template-columns:24px 1fr 40px 46px!important;
+  }
+  .live-picked-by{ display:none!important; }
+}
+
+.scorecard-panel{
+  padding:10px 14px 14px 46px!important;
+  background:#f9fbfa!important;
+  border-bottom:1px solid #edf1ee!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:8px!important;
+}
+.scorecard-round{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+}
+.scorecard-round-label{
+  font-size:10px!important;
+  font-weight:800!important;
+  color:var(--muted)!important;
+  min-width:40px!important;
+}
+.scorecard-round-label b{
+  color:var(--g)!important;
+  margin-left:4px!important;
+}
+.scorecard-holes{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:4px!important;
+}
+.scorecard-hole{
+  width:22px!important;
+  height:22px!important;
+  border-radius:5px!important;
+  background:#eef2ef!important;
+  color:var(--g)!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.scorecard-hole.under{ background:var(--red)!important; color:#fff!important; }
+.scorecard-hole.over{ background:#dfe6e2!important; color:#78857f!important; }

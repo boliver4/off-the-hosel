@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFeaturedTournament, getPicksForTournament } from "@/lib/data";
 import { formatPoints } from "@/lib/scoring";
+import { LiveLeaderboard } from "@/components/LiveLeaderboard";
 
 export default async function LeaderboardPage() {
   const tournament = await getFeaturedTournament();
@@ -17,6 +18,19 @@ export default async function LeaderboardPage() {
       {tournament && (
         <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 10px" }}>{tournament.name}</p>
       )}
+
+      {tournament ? (
+        <>
+          <div className="section-label">LIVE FROM THE COURSE</div>
+          <LiveLeaderboard tournamentId={tournament.id} />
+          <p style={{ color: "var(--muted)", fontSize: 10, margin: "6px 0 18px" }}>
+            Tap a player to see their hole-by-hole scorecard. Live data refreshes about once a
+            minute.
+          </p>
+        </>
+      ) : null}
+
+      <div className="section-label">FANTASY POINTS</div>
       <div className="card" id="boardList">
         <div className="trow head">
           <span>POS</span>
@@ -41,6 +55,10 @@ export default async function LeaderboardPage() {
           ))
         )}
       </div>
+      <p style={{ color: "var(--muted)", fontSize: 10, margin: "6px 0 0" }}>
+        Official fantasy points are calculated once your commissioner enters each golfer&rsquo;s
+        final winnings after the tournament wraps.
+      </p>
     </section>
   );
 }

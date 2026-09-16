@@ -138,11 +138,15 @@ export function CommissionerResultsForm({
       </label>
 
       <div className="sync-all-box">
-        <div>
+        <div className="sync-all-copy">
           <b>Sync every golfer at once</b>
-          <small>Pulls live winnings, finish, and hole-by-hole for the whole field — no need to open each golfer one by one.</small>
+          <small>
+            Pulls live winnings, finish, and hole-by-hole for the whole field. Once auto-sync is set
+            up, this also happens by itself every 15 minutes — use this button anytime you want an
+            up-to-the-second pull right now.
+          </small>
         </div>
-        <button type="button" className="submit" disabled={syncing || !tournamentId} onClick={syncAll}>
+        <button type="button" className="sync-all-btn" disabled={syncing || !tournamentId} onClick={syncAll}>
           {syncing ? "Syncing…" : "Sync All From Live Scoring"}
         </button>
       </div>

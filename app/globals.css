@@ -5471,18 +5471,36 @@ body{background:#f2f4f1}
 /* Sync-all-golfers box (Commissioner Results form) */
 .sync-all-box{
   display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
+  flex-direction:column!important;
   gap:10px!important;
-  padding:12px!important;
-  border-radius:10px!important;
+  padding:14px!important;
+  border-radius:12px!important;
   background:#eef8f2!important;
   border:1px solid #cfe9db!important;
 }
-.sync-all-box b{ display:block!important; font-size:13px!important; }
-.sync-all-box small{ display:block!important; color:var(--muted)!important; font-size:10px!important; margin-top:2px!important; }
-.sync-all-box button{ flex-shrink:0!important; font-size:11px!important; padding:10px 12px!important; white-space:nowrap!important; }
-@media(max-width:480px){
-  .sync-all-box{ flex-direction:column!important; align-items:stretch!important; }
-  .sync-all-box button{ width:100%!important; }
+.sync-all-copy{ width:100%!important; }
+.sync-all-copy b{
+  display:block!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  color:#123a2e!important;
+  margin-bottom:3px!important;
 }
+.sync-all-copy small{
+  display:block!important;
+  color:#3c4a45!important;
+  font-size:11px!important;
+  line-height:1.5!important;
+}
+.sync-all-btn{
+  width:100%!important;
+  border:0!important;
+  background:var(--g)!important;
+  color:#fff!important;
+  border-radius:10px!important;
+  padding:13px!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  cursor:pointer!important;
+}
+.sync-all-btn:disabled{ background:#cad4cf!important; color:#89948f!important; cursor:default!important; }

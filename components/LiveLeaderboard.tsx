@@ -152,35 +152,57 @@ function PlayerScorecard({ eventId, athleteId }: { eventId: string; athleteId: s
     );
   }
 
+  return <ScorecardRounds rounds={rounds} />;
+}
+
+function ScorecardRounds({ rounds }: { rounds: ScorecardRound[] }) {
+  const [selected, setSelected] = useState(rounds[rounds.length - 1].round);
+  const active = rounds.find((r) => r.round === selected) ?? rounds[rounds.length - 1];
+
   return (
     <div className="scorecard-panel">
-      {rounds.map((r) => (
-        <div key={r.round} className="scorecard-round">
-          <span className="scorecard-round-label">
-            R{r.round}
-            {r.total !== null ? <b> {r.total}</b> : null}
-          </span>
-          <div className="scorecard-holes">
-            {r.holes.map((h) => (
-              <span
-                key={h.hole}
-                className={
-                  h.score !== null && h.par !== null
-                    ? h.score < h.par
-                      ? "scorecard-hole under"
-                      : h.score > h.par
-                      ? "scorecard-hole over"
-                      : "scorecard-hole"
-                    : "scorecard-hole"
-                }
-                title={`Hole ${h.hole}${h.par ? ` · Par ${h.par}` : ""}`}
-              >
-                {h.score ?? "-"}
-              </span>
-            ))}
-          </div>
+      {rounds.length > 1 ? (
+        <div className="scorecard-round-tabs">
+          {rounds.map((r) => (
+            <button
+              key={r.round}
+              type="button"
+              className={r.round === selected ? "scorecard-round-tab active" : "scorecard-round-tab"}
+              onClick={() => setSelected(r.round)}
+            >
+              R{r.round}
+            </button>
+          ))}
         </div>
-      ))}
+      ) : null}
+      <div className="scorecard-round">
+        <span className="scorecard-round-label">
+          R{active.round}
+          {active.total !== null ? <b> {active.total}</b> : null}
+        </span>
+        <div className="scorecard-holes">
+          {active.holes.map((h) => (
+            <span
+              key={h.hole}
+              className={`scorecard-hole ${holeClass(h.score, h.par)}`}
+              title={`Hole ${h.hole}${h.par ? ` · Par ${h.par}` : ""}`}
+            >
+              {h.score ?? "-"}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+/** Classic scorecard marks: circle = birdie, double circle = eagle or better, square = bogey, double square = double bogey or worse, plain = par. */
+function holeClass(score: number | null, par: number | null): string {
+  if (score === null || par === null) return "";
+  const diff = score - par;
+  if (diff <= -2) return "eagle";
+  if (diff === -1) return "birdie";
+  if (diff === 1) return "bogey";
+  if (diff >= 2) return "double-bogey";
+  return "par";
 }

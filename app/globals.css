@@ -5306,7 +5306,7 @@ body{background:#f2f4f1}
 .scorecard-holes{
   display:flex!important;
   flex-wrap:wrap!important;
-  gap:4px!important;
+  gap:7px!important;
 }
 .scorecard-hole{
   width:22px!important;
@@ -5319,6 +5319,52 @@ body{background:#f2f4f1}
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
+  background:transparent!important;
+  position:relative!important;
+  box-sizing:border-box!important;
 }
-.scorecard-hole.under{ background:var(--red)!important; color:#fff!important; }
-.scorecard-hole.over{ background:#dfe6e2!important; color:#78857f!important; }
+/* Classic scorecard marks — shapes drawn around the number, not a filled tile */
+.scorecard-hole.par{ border:0!important; }
+.scorecard-hole.birdie{
+  border-radius:50%!important;
+  border:1.5px solid var(--red)!important;
+  color:var(--red)!important;
+}
+.scorecard-hole.eagle{
+  border-radius:50%!important;
+  border:1.5px solid var(--red)!important;
+  color:var(--red)!important;
+  box-shadow:0 0 0 2.5px #f9fbfa, 0 0 0 4px var(--red)!important;
+}
+.scorecard-hole.bogey{
+  border-radius:3px!important;
+  border:1.5px solid #56605c!important;
+  color:#56605c!important;
+}
+.scorecard-hole.double-bogey{
+  border-radius:2px!important;
+  border:1.5px solid #56605c!important;
+  color:#56605c!important;
+  box-shadow:0 0 0 2.5px #f9fbfa, 0 0 0 4px #56605c!important;
+}
+
+.scorecard-round-tabs{
+  display:flex!important;
+  gap:6px!important;
+  margin-bottom:2px!important;
+}
+.scorecard-round-tab{
+  border:1px solid var(--line)!important;
+  background:#fff!important;
+  color:var(--muted)!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  padding:5px 10px!important;
+  border-radius:7px!important;
+  cursor:pointer!important;
+}
+.scorecard-round-tab.active{
+  background:var(--g)!important;
+  border-color:var(--g)!important;
+  color:#fff!important;
+}

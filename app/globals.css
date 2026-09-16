@@ -5185,3 +5185,40 @@ body{background:#f2f4f1}
     padding:9px 8px!important;
   }
 }
+
+/* How It Works — game tab toggle */
+.howto-tabs{
+  display:flex!important;
+  gap:8px!important;
+  margin:0 0 18px!important;
+  background:#f0f3f1!important;
+  border-radius:12px!important;
+  padding:5px!important;
+}
+.howto-tab{
+  flex:1!important;
+  border:0!important;
+  background:transparent!important;
+  padding:12px 10px!important;
+  border-radius:9px!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  color:var(--muted)!important;
+  cursor:pointer!important;
+  transition:background .15s ease,color .15s ease!important;
+}
+.howto-tab.active{
+  background:var(--g)!important;
+  color:#fff!important;
+  box-shadow:0 2px 6px rgba(0,0,0,.12)!important;
+}
+.howto-panel{
+  animation:oth-fade-in .15s ease!important;
+}
+@keyframes oth-fade-in{
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:560px){
+  .howto-tab{ font-size:12px!important; padding:10px 6px!important; }
+}

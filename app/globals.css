@@ -5741,3 +5741,25 @@ body{background:#f2f4f1}
   .tourney-settings-controls{grid-template-columns:1fr;}
   .tourney-settings-controls button{width:100%}
 }
+.tourney-segment-badge{
+  background:#e9e4d8;
+  color:#4a4032;
+}
+.tab-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+.tab-pill.active{
+  background:var(--g);
+  border-color:var(--g);
+  color:#fff;
+}

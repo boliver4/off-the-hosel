@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { syncTournamentResults } from "@/lib/live-scores";
+import { syncTournamentField, syncTournamentResults } from "@/lib/live-scores";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,6 +16,13 @@ export const maxDuration = 60;
  * CRON_SECRET environment variable. Finds every tournament whose date
  * range covers today (or ended within the last day, to catch final
  * results once a tournament wraps) and syncs each one.
+ *
+ * Also auto-loads the FIELD (see syncTournamentField) for any tournament
+ * starting in the next week that doesn't have one saved yet — so a normal
+ * week needs zero commissioner action before picks open. Once a field
+ * exists for a tournament (whether from this or a manual edit) it's left
+ * alone here; re-loading it is still available any time via the "Auto-load
+ * Field" button on Commissioner Tools -> Tournament Field.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -31,6 +38,7 @@ export async function GET(req: NextRequest) {
 
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
   // Tournaments in progress today, or that just finished yesterday (so the
   // last round's results still get swept up automatically).
@@ -43,15 +51,32 @@ export async function GET(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-  if (!tournaments || tournaments.length === 0) {
-    return NextResponse.json({ ran: 0, results: [] });
-  }
 
   const results = [];
-  for (const t of tournaments) {
+  for (const t of tournaments ?? []) {
     const result = await syncTournamentResults(supabase, (t as any).id);
     results.push({ tournament: (t as any).name, ...result });
   }
 
-  return NextResponse.json({ ran: results.length, results });
+  // Upcoming tournaments (today through 7 days out) that don't have a field
+  // saved yet — auto-load one so the picker isn't stuck showing the whole
+  // golfer pool while everyone waits on a commissioner to hand-pick it.
+  const { data: upcoming } = await supabase
+    .from("tournaments")
+    .select("id,name,start_date")
+    .gte("start_date", today)
+    .lte("start_date", weekOut);
+
+  const fieldResults = [];
+  for (const t of upcoming ?? []) {
+    const { count } = await supabase
+      .from("tournament_field")
+      .select("golfer_id", { count: "exact", head: true })
+      .eq("tournament_id", (t as any).id);
+    if (count && count > 0) continue;
+    const result = await syncTournamentField(supabase, (t as any).id);
+    fieldResults.push({ tournament: (t as any).name, ...result });
+  }
+
+  return NextResponse.json({ ran: results.length, results, fieldsLoaded: fieldResults.length, fieldResults });
 }

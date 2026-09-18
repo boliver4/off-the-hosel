@@ -197,7 +197,7 @@ export function matchGolferToLive(
   return live.find((e) => normalizeName(e.name) === target) ?? null;
 }
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")
@@ -364,4 +364,54 @@ export async function syncTournamentResults(supabase: any, tournamentId: string)
   }
 
   return { synced: rows.length, skipped, total: golfers.length };
+}
+
+export type FieldSyncResult = {
+  matched: number;
+  total: number;
+  error?: string;
+};
+
+/**
+ * Auto-loads a tournament's field straight from ESPN's entry list/leaderboard
+ * (the same endpoint used for live results — ESPN populates it with the
+ * full field and tee times before a round is even played) and writes it
+ * into tournament_field, matched against golfers already in your pool by
+ * name. Replaces whatever field was previously saved for that tournament,
+ * same as the manual "Save Field" button does. Shared by the commissioner's
+ * "Auto-load Field" button and the background cron job — `supabase` is
+ * either the logged-in admin's cookie client or a service-role client.
+ */
+export async function syncTournamentField(supabase: any, tournamentId: string): Promise<FieldSyncResult> {
+  const { data: tournament } = await supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle();
+  if (!tournament) return { matched: 0, total: 0, error: "Tournament not found" };
+
+  const espnEventId = await findEspnEventId(tournament as any);
+  if (!espnEventId) return { matched: 0, total: 0, error: "No live event found for this tournament yet" };
+
+  const liveEntries = await getEspnLeaderboard(espnEventId);
+  if (liveEntries.length === 0) return { matched: 0, total: 0, error: "No field data available yet" };
+
+  const { data: golfersData } = await supabase.from("golfers").select("id,name");
+  const pool: { id: string; name: string }[] = golfersData ?? [];
+
+  const matchedIds: string[] = [];
+  for (const entry of liveEntries) {
+    const target = normalizeName(entry.name);
+    const g = pool.find((p) => normalizeName(p.name) === target);
+    if (g) matchedIds.push(g.id);
+  }
+
+  if (matchedIds.length === 0) {
+    return { matched: 0, total: liveEntries.length, error: "None of the live field matched golfers in your pool" };
+  }
+
+  const { error: deleteError } = await supabase.from("tournament_field").delete().eq("tournament_id", tournamentId);
+  if (deleteError) return { matched: 0, total: liveEntries.length, error: deleteError.message };
+
+  const rows = matchedIds.map((golfer_id) => ({ tournament_id: tournamentId, golfer_id }));
+  const { error: insertError } = await supabase.from("tournament_field").insert(rows);
+  if (insertError) return { matched: 0, total: liveEntries.length, error: insertError.message };
+
+  return { matched: matchedIds.length, total: liveEntries.length };
 }

@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { getOneAndDoneStandings, getSegmentStandings } from "@/lib/data";
+import { getCurrentSegment, getOneAndDoneStandings, getSegmentStandings } from "@/lib/data";
 import { formatPoints } from "@/lib/scoring";
 
 export default async function StandingsPage() {
-  const [standings, segmentStandings] = await Promise.all([getOneAndDoneStandings(), getSegmentStandings()]);
+  const [standings, segmentStandings, currentSegment] = await Promise.all([
+    getOneAndDoneStandings(),
+    getSegmentStandings(),
+    getCurrentSegment(),
+  ]);
 
   return (
     <section id="season" className="screen active">
@@ -39,8 +43,9 @@ export default async function StandingsPage() {
 
       {Array.from(segmentStandings.entries()).map(([segment, rows]) => (
         <div key={segment}>
-          <div className="section-label" style={{ marginTop: 16 }}>
+          <div className="section-label" style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
             {segment.toUpperCase()}
+            {segment === currentSegment ? <span className="tourney-current-badge">CURRENT</span> : null}
           </div>
           <div className="card">
             {rows.map((s, i) => (

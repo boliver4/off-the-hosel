@@ -54,6 +54,18 @@ export async function getFeaturedTournament(): Promise<Tournament | null> {
   return upcoming ?? tournaments[tournaments.length - 1];
 }
 
+/**
+ * The season segment currently "in play" — auto-detected as whichever
+ * segment the current tournament (see getFeaturedTournament: a
+ * commissioner pin, else nearest by date) belongs to. Returns null if that
+ * tournament has no segment assigned yet. Used to badge the active segment
+ * on the Standings page without any separate manual toggle.
+ */
+export async function getCurrentSegment(): Promise<string | null> {
+  const current = await getFeaturedTournament();
+  return current?.segment ?? null;
+}
+
 /** Every season segment's standings, grouped by segment name in tournament order of first appearance. */
 export async function getSegmentStandings(): Promise<Map<string, SegmentStanding[]>> {
   if (!isSupabaseConfigured) return new Map();

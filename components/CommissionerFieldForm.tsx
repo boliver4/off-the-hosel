@@ -18,7 +18,19 @@ export function CommissionerFieldForm({ tournaments, golfers }: { tournaments: T
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
   const toast = useToast();
+
+  async function loadSaved() {
+    if (!tournamentId) return;
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.from("tournament_field").select("golfer_id").eq("tournament_id", tournamentId);
+    if (!error && data) {
+      setSelected(new Set((data as any[]).map((r) => r.golfer_id)));
+    }
+    setLoading(false);
+  }
 
   useEffect(() => {
     if (!tournamentId) return;
@@ -38,6 +50,29 @@ export function CommissionerFieldForm({ tournaments, golfers }: { tournaments: T
       cancelled = true;
     };
   }, [tournamentId]);
+
+  async function autoLoadField() {
+    if (!tournamentId) return;
+    setAutoLoading(true);
+    try {
+      const res = await fetch("/api/sync-field", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data?.error || "Couldn't auto-load the field");
+      } else {
+        toast(`Loaded ${data.matched} of ${data.total} live field golfers into your pool`);
+        await loadSaved();
+      }
+    } catch {
+      toast("Couldn't reach live scoring");
+    } finally {
+      setAutoLoading(false);
+    }
+  }
 
   const filtered = useMemo(
     () => golfers.filter((g) => g.name.toLowerCase().includes(query.toLowerCase())),
@@ -86,6 +121,21 @@ export function CommissionerFieldForm({ tournaments, golfers }: { tournaments: T
           ))}
         </select>
       </label>
+
+      <div className="sync-all-box">
+        <div className="sync-all-copy">
+          <b>Auto-load field from live data</b>
+          <small>
+            Pulls this tournament&rsquo;s actual entry list straight from live scoring and checks off
+            every matching golfer in your pool for you &mdash; no need to hand-pick from ~200 names. Safe
+            to run again any time (this week&rsquo;s field can change up until tee time); it replaces
+            whatever was saved before. Review the list below and hit Save Field when it looks right.
+          </small>
+        </div>
+        <button type="button" className="sync-all-btn" disabled={autoLoading || !tournamentId} onClick={autoLoadField}>
+          {autoLoading ? "Loading…" : "Auto-load Field"}
+        </button>
+      </div>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <small style={{ color: "var(--muted)" }}>

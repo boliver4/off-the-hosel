@@ -117,6 +117,19 @@ export async function getEspnLeaderboard(espnEventId: string): Promise<LiveLeade
           statusName.includes("CUT") ||
           statusDesc.includes("CUT") ||
           statusDesc.includes("MISSED");
+        // House rule: a golfer who withdraws, is disqualified, or otherwise
+        // doesn't complete a round is treated the same as missing the cut
+        // (the commissioner-set missed-cut penalty applies) — not left as
+        // "made the cut" just because ESPN never marks them CUT or FINISH.
+        const isWithdrawn =
+          (position ?? "").toUpperCase() === "WD" ||
+          (position ?? "").toUpperCase() === "DQ" ||
+          statusName.includes("WITHDR") ||
+          statusName.includes("DISQUAL") ||
+          statusDesc.includes("WITHDR") ||
+          statusDesc.includes("DISQUAL") ||
+          statusDesc.includes(" WD") ||
+          statusDesc === "WD";
         return {
           espnId: String(c.id ?? c.athlete?.id ?? ""),
           name,
@@ -129,7 +142,7 @@ export async function getEspnLeaderboard(espnEventId: string): Promise<LiveLeade
           teeTime: c.status?.teeTime ?? null,
           status: c.status?.type?.description ?? c.status?.detail ?? null,
           earnings: typeof c.earnings === "number" ? c.earnings : null,
-          madeCut: isCut ? false : isFinished ? true : null,
+          madeCut: isCut || isWithdrawn ? false : isFinished ? true : null,
         };
       })
       .filter((e): e is LiveLeaderboardEntry => !!e);

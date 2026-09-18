@@ -41,10 +41,10 @@ export default async function LeaderboardPage() {
         ) : (
           board.map((row) => (
             <div className="trow pickboard-row" key={row.user_id}>
-              <span>
+              <Link href={`/members/${row.user_id}`} style={{ textDecoration: "underline" }}>
                 {row.display_name}
                 {row.is_viewer ? " (you)" : ""}
-              </span>
+              </Link>
               {row.has_pick ? (
                 row.golfer_name ? (
                   <span>{row.golfer_name}</span>

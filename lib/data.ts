@@ -155,8 +155,18 @@ export async function getPickForTournament(userId: string, tournamentId: string)
   }
 }
 
-/** All of a user's picks across the season, newest first, with points + golfer/tournament info. */
-export async function getUserPicksWithDetails(userId: string): Promise<any[]> {
+/**
+ * All of a user's picks across the season, newest first, with points +
+ * golfer/tournament info. Pass `viewerId` (the person looking, or null if
+ * signed out) to get the same reveal gating as everywhere else in the
+ * app: a pick's golfer is only visible once that tournament's deadline
+ * has passed, EXCEPT to the pick's own owner, who always sees it. Every
+ * pick still has a `revealed` flag so callers can render a "locked" row
+ * instead of the golfer's name/photo when it's false. Omit `viewerId`
+ * (or leave it undefined) to always reveal everything — used by the
+ * signed-in-owner-only /my-picks page, where gating would be pointless.
+ */
+export async function getUserPicksWithDetails(userId: string, viewerId?: string | null): Promise<any[]> {
   if (!isSupabaseConfigured) return [];
   try {
     const supabase = createClient();
@@ -175,14 +185,36 @@ export async function getUserPicksWithDetails(userId: string): Promise<any[]> {
       .eq("user_id", userId);
 
     const pointsByPickId = new Map<string, any>((pointsRows ?? []).map((p: any) => [p.pick_id, p]));
+    const today = new Date().toISOString().slice(0, 10);
+    const gate = viewerId !== undefined;
+    const isOwner = viewerId != null && viewerId === userId;
 
-    return (data ?? []).map((pick: any) => ({
-      ...pick,
-      points: pointsByPickId.get(pick.id)?.points ?? 0,
-      made_cut: pointsByPickId.get(pick.id)?.made_cut ?? null,
-    }));
+    return (data ?? []).map((pick: any) => {
+      const deadlinePassed = (pick.tournaments?.start_date ?? "9999-12-31") <= today;
+      const revealed = !gate || isOwner || deadlinePassed;
+      return {
+        ...pick,
+        points: pointsByPickId.get(pick.id)?.points ?? 0,
+        made_cut: pointsByPickId.get(pick.id)?.made_cut ?? null,
+        revealed,
+        golfers: revealed ? pick.golfers : null,
+      };
+    });
   } catch {
     return [];
+  }
+}
+
+/** A single member's profile by id, or null if it doesn't exist. */
+export async function getProfileById(userId: string): Promise<{ id: string; display_name: string } | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.from("profiles").select("id, display_name").eq("id", userId).maybeSingle();
+    if (error) throw error;
+    return data ?? null;
+  } catch {
+    return null;
   }
 }
 

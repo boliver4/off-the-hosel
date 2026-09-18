@@ -28,7 +28,7 @@ export default async function StandingsPage() {
           </div>
         ) : (
           standings.map((s, i) => (
-            <div className="bigrow" key={s.user_id}>
+            <Link href={`/members/${s.user_id}`} className="bigrow" key={s.user_id} style={{ cursor: "pointer" }}>
               <div className="meta">
                 <b>
                   {i + 1}. {s.display_name}
@@ -36,7 +36,7 @@ export default async function StandingsPage() {
                 <small>{s.weeks_picked} week{s.weeks_picked === 1 ? "" : "s"} picked</small>
               </div>
               <b>{formatPoints(s.total_points)}</b>
-            </div>
+            </Link>
           ))
         )}
       </div>
@@ -49,7 +49,7 @@ export default async function StandingsPage() {
           </div>
           <div className="card">
             {rows.map((s, i) => (
-              <div className="bigrow" key={s.user_id}>
+              <Link href={`/members/${s.user_id}`} className="bigrow" key={s.user_id} style={{ cursor: "pointer" }}>
                 <div className="meta">
                   <b>
                     {i + 1}. {s.display_name}
@@ -59,7 +59,7 @@ export default async function StandingsPage() {
                   </small>
                 </div>
                 <b>{formatPoints(s.total_points)}</b>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

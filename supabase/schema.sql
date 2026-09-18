@@ -119,10 +119,18 @@ create table if not exists public.tournaments (
   -- points for a pick, e.g. 1.00 = 1%. Set higher for majors.
   winnings_scoring_pct numeric(6, 3) not null default 1.000,
   pick_lock_at timestamptz,
+  -- Free-text season segment this tournament counts toward for segment
+  -- standings (e.g. "Segment 1"). Null = not part of any segment.
+  segment text,
+  -- The commissioner can pin exactly one tournament as "current" on the
+  -- dashboard/leaderboard, overriding the automatic nearest-by-date pick.
+  -- The partial unique index below enforces "at most one" at the DB level.
+  is_featured boolean not null default false,
   created_at timestamptz not null default now()
 );
 
 create index if not exists tournaments_start_date_idx on public.tournaments (start_date);
+create unique index if not exists tournaments_one_featured_idx on public.tournaments (is_featured) where is_featured;
 
 -- ---------------------------------------------------------------------------
 -- tournament_field: which golfers are actually playing a given tournament.
@@ -365,6 +373,25 @@ from public.profiles pr
 left join public.one_and_done_pick_points pp on pp.user_id = pr.id
 group by pr.id, pr.display_name
 order by total_points desc;
+
+-- Segment standings: same as above, but scoped to one season segment at a
+-- time. Every profile appears in every segment that has at least one
+-- tournament assigned to it, even with 0 points, same left-join pattern as
+-- the overall standings view.
+create or replace view public.one_and_done_standings_by_segment as
+select
+  seg.segment,
+  pr.id as user_id,
+  pr.display_name,
+  coalesce(sum(pp.points), 0) as total_points,
+  count(pp.pick_id) as weeks_picked
+from (select distinct segment from public.tournaments where segment is not null) seg
+cross join public.profiles pr
+left join public.one_and_done_pick_points pp
+  on pp.user_id = pr.id
+  and pp.tournament_id in (select id from public.tournaments t2 where t2.segment = seg.segment)
+group by seg.segment, pr.id, pr.display_name
+order by seg.segment, total_points desc;
 
 -- Major Challenge standings: total lineup points per user per tournament.
 create or replace view public.major_lineup_points as
@@ -618,6 +645,7 @@ grant select on
   public.tournament_result_points,
   public.one_and_done_pick_points,
   public.one_and_done_standings,
+  public.one_and_done_standings_by_segment,
   public.major_lineup_points,
   public.major_lineup_totals
 to anon, authenticated;

@@ -68,6 +68,8 @@ export interface Database {
           purse: number | null;
           winnings_scoring_pct: number;
           pick_lock_at: string | null;
+          segment: string | null;
+          is_featured: boolean;
           created_at: string;
         };
         Insert: {
@@ -82,6 +84,8 @@ export interface Database {
           purse?: number | null;
           winnings_scoring_pct?: number;
           pick_lock_at?: string | null;
+          segment?: string | null;
+          is_featured?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["tournaments"]["Insert"]>;
@@ -242,6 +246,16 @@ export interface Database {
       };
       one_and_done_standings: {
         Row: {
+          user_id: string;
+          display_name: string;
+          total_points: number;
+          weeks_picked: number;
+        };
+        Relationships: [];
+      };
+      one_and_done_standings_by_segment: {
+        Row: {
+          segment: string;
           user_id: string;
           display_name: string;
           total_points: number;

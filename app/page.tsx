@@ -84,9 +84,6 @@ export default async function HomePage() {
       {/* ===== Quick links ===== */}
       <div className="dash-quicklinks">
         <Link href="/my-picks" className="dash-qcard dash-qcard-picks">
-          <div className="dash-qcard-top">
-            <span className="dash-qcard-icon" aria-hidden="true">⛳</span>
-          </div>
           <div className="dash-qcard-bottom">
             <div>
               <b>My Picks</b>
@@ -97,9 +94,6 @@ export default async function HomePage() {
         </Link>
 
         <Link href="/leaderboard" className="dash-qcard dash-qcard-board">
-          <div className="dash-qcard-top">
-            <span className="dash-qcard-icon" aria-hidden="true">🏆</span>
-          </div>
           <div className="dash-qcard-bottom">
             <div>
               <b>Leaderboard</b>
@@ -110,9 +104,6 @@ export default async function HomePage() {
         </Link>
 
         <Link href="/tournament-info" className="dash-qcard dash-qcard-tourney">
-          <div className="dash-qcard-top">
-            <span className="dash-qcard-icon" aria-hidden="true">📅</span>
-          </div>
           <div className="dash-qcard-bottom">
             <div>
               <b>Tournaments</b>
@@ -123,9 +114,6 @@ export default async function HomePage() {
         </Link>
 
         <Link href="/standings" className="dash-qcard dash-qcard-standings">
-          <div className="dash-qcard-top">
-            <span className="dash-qcard-icon" aria-hidden="true">📊</span>
-          </div>
           <div className="dash-qcard-bottom">
             <div>
               <b>Standings</b>

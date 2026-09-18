@@ -5,6 +5,7 @@ import { DEFAULT_SCORING_SETTINGS } from "@/lib/scoring";
 export type Golfer = Database["public"]["Tables"]["golfers"]["Row"];
 export type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 export type OneAndDoneStanding = Database["public"]["Views"]["one_and_done_standings"]["Row"];
+export type SegmentStanding = Database["public"]["Views"]["one_and_done_standings_by_segment"]["Row"];
 export type PickWithPoints = Database["public"]["Views"]["one_and_done_pick_points"]["Row"];
 
 /** All active golfers, ordered by world rank. Empty array on any failure. */
@@ -37,13 +38,43 @@ export async function getTournaments(): Promise<Tournament[]> {
   }
 }
 
-/** The next upcoming tournament (today or later); falls back to the most recent past one. */
+/**
+ * The tournament shown as "current" on the dashboard/leaderboard. A
+ * commissioner-pinned tournament (is_featured) always wins; otherwise
+ * falls back to the next upcoming tournament (today or later), or the
+ * most recent past one if none is upcoming.
+ */
 export async function getFeaturedTournament(): Promise<Tournament | null> {
   const tournaments = await getTournaments();
   if (tournaments.length === 0) return null;
+  const pinned = tournaments.find((t) => t.is_featured);
+  if (pinned) return pinned;
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = tournaments.find((t) => t.end_date >= today);
   return upcoming ?? tournaments[tournaments.length - 1];
+}
+
+/** Every season segment's standings, grouped by segment name in tournament order of first appearance. */
+export async function getSegmentStandings(): Promise<Map<string, SegmentStanding[]>> {
+  if (!isSupabaseConfigured) return new Map();
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("one_and_done_standings_by_segment")
+      .select("*")
+      .order("segment", { ascending: true })
+      .order("total_points", { ascending: false });
+    if (error) throw error;
+    const bySegment = new Map<string, SegmentStanding[]>();
+    for (const row of data ?? []) {
+      const list = bySegment.get(row.segment) ?? [];
+      list.push(row);
+      bySegment.set(row.segment, list);
+    }
+    return bySegment;
+  } catch {
+    return new Map();
+  }
 }
 
 /** The next upcoming major (today or later); falls back to the most recent past one. */

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { getOneAndDoneStandings } from "@/lib/data";
+import { getOneAndDoneStandings, getSegmentStandings } from "@/lib/data";
 import { formatPoints } from "@/lib/scoring";
 
 export default async function StandingsPage() {
-  const standings = await getOneAndDoneStandings();
+  const [standings, segmentStandings] = await Promise.all([getOneAndDoneStandings(), getSegmentStandings()]);
 
   return (
     <section id="season" className="screen active">
@@ -13,6 +13,7 @@ export default async function StandingsPage() {
         </Link>
         <h1>Season Standings</h1>
       </div>
+      <div className="section-label">OVERALL</div>
       <div className="card" id="seasonList">
         {standings.length === 0 ? (
           <div className="bigrow">
@@ -35,6 +36,29 @@ export default async function StandingsPage() {
           ))
         )}
       </div>
+
+      {Array.from(segmentStandings.entries()).map(([segment, rows]) => (
+        <div key={segment}>
+          <div className="section-label" style={{ marginTop: 16 }}>
+            {segment.toUpperCase()}
+          </div>
+          <div className="card">
+            {rows.map((s, i) => (
+              <div className="bigrow" key={s.user_id}>
+                <div className="meta">
+                  <b>
+                    {i + 1}. {s.display_name}
+                  </b>
+                  <small>
+                    {s.weeks_picked} week{s.weeks_picked === 1 ? "" : "s"} picked
+                  </small>
+                </div>
+                <b>{formatPoints(s.total_points)}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

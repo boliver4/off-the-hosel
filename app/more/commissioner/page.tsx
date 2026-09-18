@@ -48,6 +48,18 @@ export default async function CommissionerPage() {
         </div>
       </div>
 
+      <div className="card" style={{ marginBottom: 10 }}>
+        <div className="bigrow">
+          <div className="meta">
+            <b>Tournament Settings</b>
+            <small>Pin the current tournament, and assign season segments.</small>
+          </div>
+          <Link href="/more/commissioner/tournaments" className="select">
+            OPEN
+          </Link>
+        </div>
+      </div>
+
       <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 10px" }}>
         Enter each golfer&rsquo;s official winnings after a tournament wraps. Points are calculated
         automatically for everyone who picked them that week.

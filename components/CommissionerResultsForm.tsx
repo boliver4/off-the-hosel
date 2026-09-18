@@ -36,6 +36,7 @@ export function CommissionerResultsForm({
   const [saving, setSaving] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const router = useRouter();
   const toast = useToast();
 
@@ -151,85 +152,99 @@ export function CommissionerResultsForm({
         </button>
       </div>
 
-      <label style={{ display: "block" }}>
-        <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Golfer</small>
-        <select className="loginfield" value={golferId} onChange={(e) => setGolferId(e.target.value)}>
-          {golfers.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <button
+        type="button"
+        className="select"
+        style={{ alignSelf: "flex-start" }}
+        onClick={() => setManualOpen((v) => !v)}
+      >
+        {manualOpen ? "Hide manual entry ▴" : "Manually enter or correct one golfer ▾"}
+      </button>
 
-      <div className="results-tally-head" style={{ marginTop: 0 }}>
-        <b>Review this one golfer</b>
-        <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
-          {autoFilling ? "Checking live scoring…" : "Re-fill from live scoring"}
-        </button>
-      </div>
-      <p style={{ color: "var(--muted)", fontSize: 10, margin: "-4px 0 0" }}>
-        Already synced above? Use this to double-check or correct one golfer&rsquo;s numbers before
-        saving — everything below is editable.
-      </p>
+      {manualOpen ? (
+        <>
+          <p style={{ color: "var(--muted)", fontSize: 10, margin: 0 }}>
+            Already synced above? Use this to double-check or correct one golfer&rsquo;s numbers before
+            saving — everything below is editable.
+          </p>
 
-      <label style={{ display: "block" }}>
-        <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Winnings ($)</small>
-        <input
-          className="loginfield"
-          type="number"
-          min={0}
-          step={1}
-          value={winnings}
-          onChange={(e) => setWinnings(e.target.value)}
-        />
-      </label>
+          <label style={{ display: "block" }}>
+            <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Golfer</small>
+            <select className="loginfield" value={golferId} onChange={(e) => setGolferId(e.target.value)}>
+              {golfers.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <label style={{ display: "block" }}>
-        <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Finish (optional)</small>
-        <input
-          className="loginfield"
-          placeholder="e.g. T4, CUT, WD"
-          value={finishPosition}
-          onChange={(e) => setFinishPosition(e.target.value)}
-        />
-      </label>
+          <div className="results-tally-head" style={{ marginTop: 0 }}>
+            <b>Review this one golfer</b>
+            <button type="button" className="select" disabled={autoFilling} onClick={autoFill}>
+              {autoFilling ? "Checking live scoring…" : "Re-fill from live scoring"}
+            </button>
+          </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-        <input type="checkbox" checked={madeCut} onChange={(e) => setMadeCut(e.target.checked)} />
-        Made the cut
-      </label>
-
-      <div className="results-tally-head">
-        <b>Hole-by-hole tally</b>
-      </div>
-      <div className="results-tally-grid">
-        {TALLY_FIELDS.map((f) => (
-          <label key={f.key} className="results-tally-field">
-            <small>{f.label}</small>
+          <label style={{ display: "block" }}>
+            <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Winnings ($)</small>
             <input
               className="loginfield"
               type="number"
               min={0}
               step={1}
-              value={tally[f.key]}
-              onChange={(e) => setTallyField(f.key, e.target.value)}
+              value={winnings}
+              onChange={(e) => setWinnings(e.target.value)}
             />
           </label>
-        ))}
-      </div>
 
-      <div className="bigrow" style={{ background: "#f5f3ee", borderRadius: 10, border: "1px solid var(--line)" }}>
-        <div className="meta">
-          <b>Fantasy points preview</b>
-          <small>Hole tally + % of winnings + missed-cut penalty, per Scoring Settings</small>
-        </div>
-        <b>{preview.toLocaleString()}</b>
-      </div>
+          <label style={{ display: "block" }}>
+            <small style={{ display: "block", color: "var(--muted)", marginBottom: 4 }}>Finish (optional)</small>
+            <input
+              className="loginfield"
+              placeholder="e.g. T4, CUT, WD"
+              value={finishPosition}
+              onChange={(e) => setFinishPosition(e.target.value)}
+            />
+          </label>
 
-      <button className="submit" disabled={saving || !tournamentId || !golferId} onClick={save}>
-        {saving ? "Saving…" : "Save Result"}
-      </button>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+            <input type="checkbox" checked={madeCut} onChange={(e) => setMadeCut(e.target.checked)} />
+            Made the cut
+          </label>
+
+          <div className="results-tally-head">
+            <b>Hole-by-hole tally</b>
+          </div>
+          <div className="results-tally-grid">
+            {TALLY_FIELDS.map((f) => (
+              <label key={f.key} className="results-tally-field">
+                <small>{f.label}</small>
+                <input
+                  className="loginfield"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={tally[f.key]}
+                  onChange={(e) => setTallyField(f.key, e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="bigrow" style={{ background: "#f5f3ee", borderRadius: 10, border: "1px solid var(--line)" }}>
+            <div className="meta">
+              <b>Fantasy points preview</b>
+              <small>Hole tally + % of winnings + missed-cut penalty, per Scoring Settings</small>
+            </div>
+            <b>{preview.toLocaleString()}</b>
+          </div>
+
+          <button className="submit" disabled={saving || !tournamentId || !golferId} onClick={save}>
+            {saving ? "Saving…" : "Save Result"}
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -19,6 +19,7 @@ export function CommissionerFieldForm({ tournaments, golfers }: { tournaments: T
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const toast = useToast();
 
   async function loadSaved() {
@@ -137,63 +138,80 @@ export function CommissionerFieldForm({ tournaments, golfers }: { tournaments: T
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <small style={{ color: "var(--muted)" }}>
-          {selected.size} of {golfers.length} selected
-        </small>
-        <button
-          type="button"
-          className="select"
-          style={{ marginLeft: "auto" }}
-          onClick={() => setSelected(new Set(golfers.map((g) => g.id)))}
-        >
-          Select All
-        </button>
-        <button type="button" className="select used" onClick={() => setSelected(new Set())}>
-          Clear All
-        </button>
-      </div>
+      <small style={{ color: "var(--muted)" }}>
+        {loading ? "Loading current field…" : `${selected.size} of ${golfers.length} golfers currently set as the field`}
+      </small>
 
-      <div className="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="10.5" cy="10.5" r="6.5" />
-          <path d="m15 15 5 5" />
-        </svg>
-        <input placeholder="Search golfers..." value={query} onChange={(e) => setQuery(e.target.value)} />
-      </div>
-
-      <div className="card" style={{ maxHeight: 420, overflowY: "auto" }}>
-        {loading ? (
-          <div className="bigrow">
-            <div className="meta">
-              <small>Loading current field&hellip;</small>
-            </div>
-          </div>
-        ) : (
-          filtered.map((g) => {
-            const checked = selected.has(g.id);
-            return (
-              <label className="bigrow" key={g.id} style={{ cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(g.id)}
-                  style={{ width: 18, height: 18, marginRight: 2 }}
-                />
-                <GolferAvatar name={g.name} photoUrl={g.headshot_url} size={36} />
-                <div className="meta">
-                  <b>{g.name}</b>
-                  <small>{g.world_rank ? `World Rank #${g.world_rank}` : "Unranked"}</small>
-                </div>
-              </label>
-            );
-          })
-        )}
-      </div>
-
-      <button className="submit" disabled={saving || loading || !tournamentId} onClick={save}>
-        {saving ? "Saving…" : "Save Field"}
+      <button
+        type="button"
+        className="select"
+        style={{ alignSelf: "flex-start" }}
+        onClick={() => setManualOpen((v) => !v)}
+      >
+        {manualOpen ? "Hide manual list ▴" : "Edit field manually ▾"}
       </button>
+
+      {manualOpen ? (
+        <>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <small style={{ color: "var(--muted)" }}>
+              {selected.size} of {golfers.length} selected
+            </small>
+            <button
+              type="button"
+              className="select"
+              style={{ marginLeft: "auto" }}
+              onClick={() => setSelected(new Set(golfers.map((g) => g.id)))}
+            >
+              Select All
+            </button>
+            <button type="button" className="select used" onClick={() => setSelected(new Set())}>
+              Clear All
+            </button>
+          </div>
+
+          <div className="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m15 15 5 5" />
+            </svg>
+            <input placeholder="Search golfers..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+
+          <div className="card" style={{ maxHeight: 420, overflowY: "auto" }}>
+            {loading ? (
+              <div className="bigrow">
+                <div className="meta">
+                  <small>Loading current field&hellip;</small>
+                </div>
+              </div>
+            ) : (
+              filtered.map((g) => {
+                const checked = selected.has(g.id);
+                return (
+                  <label className="bigrow" key={g.id} style={{ cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(g.id)}
+                      style={{ width: 18, height: 18, marginRight: 2 }}
+                    />
+                    <GolferAvatar name={g.name} photoUrl={g.headshot_url} size={36} />
+                    <div className="meta">
+                      <b>{g.name}</b>
+                      <small>{g.world_rank ? `World Rank #${g.world_rank}` : "Unranked"}</small>
+                    </div>
+                  </label>
+                );
+              })
+            )}
+          </div>
+
+          <button className="submit" disabled={saving || loading || !tournamentId} onClick={save}>
+            {saving ? "Saving…" : "Save Field"}
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }
